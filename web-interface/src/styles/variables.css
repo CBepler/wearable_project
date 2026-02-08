@@ -1,0 +1,47 @@
+:root {
+  /* Colors - Modern Dark Theme */
+  --color-bg: #0f172a;       /* Slate 900 */
+  --color-surface: #1e293b;  /* Slate 800 */
+  --color-surface-hover: #334155; /* Slate 700 */
+  --color-text: #f8fafc;     /* Slate 50 */
+  --color-text-muted: #94a3b8; /* Slate 400 */
+  --color-primary: #38bdf8;  /* Sky 400 */
+  --color-primary-hover: #0ea5e9; /* Sky 500 */
+  --color-accent: #f472b6;   /* Pink 400 */
+  --color-border: #334155;   /* Slate 700 */
+  --color-success: #4ade80;  /* Green 400 */
+  --color-warning: #fbbf24;  /* Amber 400 */
+  --color-error: #f87171;    /* Red 400 */
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}

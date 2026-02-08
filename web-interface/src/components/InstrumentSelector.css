@@ -1,0 +1,61 @@
+.instrument-card {
+    height: 100%;
+}
+
+.text-accent {
+    color: var(--color-accent);
+}
+
+.instrument-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.instrument-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-surface-hover);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-fast);
+}
+
+.instrument-option:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text);
+    transform: translateY(-2px);
+}
+
+.instrument-option.active {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--active-color);
+    color: var(--active-color);
+}
+
+.instrument-icon {
+    z-index: 1;
+}
+
+.instrument-name {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    z-index: 1;
+}
+
+/* Glow effect for active state */
+.instrument-option.active::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, var(--active-color) 0%, transparent 70%);
+    opacity: 0.1;
+    pointer-events: none;
+}
