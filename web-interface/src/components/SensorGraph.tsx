@@ -1,24 +1,60 @@
+import { useState, useEffect, useRef } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { Activity } from 'lucide-react';
+import type { SensorData } from '../audio/types';
 import './SensorGraph.css';
 
-// Mock data generator for initial display
-const generateMockData = () => {
-    const data = [];
-    for (let i = 0; i < 50; i++) {
-        data.push({
-            time: i,
-            x: Math.sin(i * 0.2) * 50 + (Math.random() - 0.5) * 10,
-            y: Math.cos(i * 0.2) * 50 + (Math.random() - 0.5) * 10,
-            z: Math.sin(i * 0.1) * 30 + (Math.random() - 0.5) * 5,
-        });
-    }
-    return data;
-};
+const MAX_POINTS = 60;
 
-const data = generateMockData();
+interface DataPoint {
+    time: number;
+    v1: number;
+    v2: number;
+    v3: number;
+}
 
-export function SensorGraph() {
+type ViewMode = 'accel' | 'rotation';
+
+interface SensorGraphProps {
+    sensorData: SensorData;
+}
+
+export function SensorGraph({ sensorData }: SensorGraphProps) {
+    const [viewMode, setViewMode] = useState<ViewMode>('accel');
+    const [chartData, setChartData] = useState<DataPoint[]>([]);
+    const tickRef = useRef(0);
+
+    // Append a new data point every ~100 ms
+    useEffect(() => {
+        const id = setInterval(() => {
+            tickRef.current += 1;
+            const t = tickRef.current;
+
+            setChartData((prev) => {
+                const point: DataPoint =
+                    viewMode === 'accel'
+                        ? { time: t, v1: sensorData.accelX, v2: sensorData.accelY, v3: sensorData.accelZ }
+                        : { time: t, v1: sensorData.roll, v2: sensorData.pitch, v3: sensorData.yaw };
+
+                const next = [...prev, point];
+                return next.length > MAX_POINTS ? next.slice(next.length - MAX_POINTS) : next;
+            });
+        }, 100);
+
+        return () => clearInterval(id);
+    }, [sensorData, viewMode]);
+
+    // Reset chart data when switching views
+    useEffect(() => {
+        setChartData([]);
+        tickRef.current = 0;
+    }, [viewMode]);
+
+    const labels =
+        viewMode === 'accel'
+            ? { v1: 'Accel X', v2: 'Accel Y', v3: 'Accel Z', unit: 'm/s²' }
+            : { v1: 'Roll', v2: 'Pitch', v3: 'Yaw', unit: '°' };
+
     return (
         <div className="card sensor-graph-card">
             <div className="card-header">
@@ -27,19 +63,29 @@ export function SensorGraph() {
                     <h3>Motion Data</h3>
                 </div>
                 <div className="card-actions">
-                    {/* Placeholder for future time-range or play/pause controls */}
+                    <div className="view-toggle">
+                        <button
+                            className={`toggle-btn ${viewMode === 'accel' ? 'active' : ''}`}
+                            onClick={() => setViewMode('accel')}
+                        >
+                            Accel
+                        </button>
+                        <button
+                            className={`toggle-btn ${viewMode === 'rotation' ? 'active' : ''}`}
+                            onClick={() => setViewMode('rotation')}
+                        >
+                            Rotation
+                        </button>
+                    </div>
                     <span className="live-badge">LIVE</span>
                 </div>
             </div>
 
             <div className="chart-container">
                 <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={data}>
+                    <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                        <XAxis
-                            dataKey="time"
-                            hide={true}
-                        />
+                        <XAxis dataKey="time" hide={true} />
                         <YAxis
                             stroke="var(--color-text-muted)"
                             fontSize={12}
@@ -51,31 +97,12 @@ export function SensorGraph() {
                                 backgroundColor: 'var(--color-surface)',
                                 borderColor: 'var(--color-border)',
                                 color: 'var(--color-text)',
-                                borderRadius: 'var(--radius-md)'
+                                borderRadius: 'var(--radius-md)',
                             }}
                         />
-                        <Line
-                            type="monotone"
-                            dataKey="x"
-                            stroke="var(--color-primary)"
-                            strokeWidth={2}
-                            dot={false}
-                            activeDot={{ r: 6 }}
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="y"
-                            stroke="var(--color-accent)"
-                            strokeWidth={2}
-                            dot={false}
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="z"
-                            stroke="var(--color-success)"
-                            strokeWidth={2}
-                            dot={false}
-                        />
+                        <Line type="monotone" dataKey="v1" name={labels.v1} stroke="var(--color-primary)" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="v2" name={labels.v2} stroke="var(--color-accent)" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="v3" name={labels.v3} stroke="var(--color-success)" strokeWidth={2} dot={false} />
                     </LineChart>
                 </ResponsiveContainer>
             </div>
@@ -83,15 +110,15 @@ export function SensorGraph() {
             <div className="legend">
                 <div className="legend-item">
                     <span className="legend-color" style={{ backgroundColor: 'var(--color-primary)' }}></span>
-                    <span>Rotation X</span>
+                    <span>{labels.v1}</span>
                 </div>
                 <div className="legend-item">
                     <span className="legend-color" style={{ backgroundColor: 'var(--color-accent)' }}></span>
-                    <span>Rotation Y</span>
+                    <span>{labels.v2}</span>
                 </div>
                 <div className="legend-item">
                     <span className="legend-color" style={{ backgroundColor: 'var(--color-success)' }}></span>
-                    <span>Rotation Z</span>
+                    <span>{labels.v3}</span>
                 </div>
             </div>
         </div>

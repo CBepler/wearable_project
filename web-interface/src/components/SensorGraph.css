@@ -96,3 +96,38 @@
     height: 10px;
     border-radius: 2px;
 }
+
+/* ─── View Toggle ──────────────────────────────────────────────────────── */
+
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.view-toggle {
+    display: flex;
+    background: var(--color-bg);
+    border-radius: var(--radius-full);
+    padding: 2px;
+    gap: 2px;
+}
+
+.toggle-btn {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+    background: transparent;
+    transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.toggle-btn:hover {
+    color: var(--color-text);
+}
+
+.toggle-btn.active {
+    color: var(--color-bg);
+    background: var(--color-primary);
+}
