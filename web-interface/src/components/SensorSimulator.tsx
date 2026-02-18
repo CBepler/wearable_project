@@ -21,9 +21,9 @@ const ACCEL_SLIDERS: SliderConfig[] = [
 ];
 
 const ROTATION_SLIDERS: SliderConfig[] = [
-    { key: 'roll', label: 'Roll', min: -180, max: 180, step: 1, unit: '°', color: 'var(--color-primary)' },
-    { key: 'pitch', label: 'Pitch', min: -180, max: 180, step: 1, unit: '°', color: 'var(--color-accent)' },
-    { key: 'yaw', label: 'Yaw', min: -180, max: 180, step: 1, unit: '°', color: 'var(--color-success)' },
+    { key: 'roll', label: 'Roll', min: -180, max: 180, step: 1, unit: '°', color: 'var(--color-accent)' },
+    { key: 'pitch', label: 'Pitch', min: -180, max: 180, step: 1, unit: '°', color: 'var(--color-primary)' },
+    { key: 'yaw', label: 'Yaw', min: -180, max: 180, step: 1, unit: '°', color: 'var(--color-warning)' },
 ];
 
 interface SensorSimulatorProps {
