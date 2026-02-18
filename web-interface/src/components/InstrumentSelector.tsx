@@ -1,16 +1,19 @@
-import { useState } from 'react';
-import { Music, Guitar, Drum } from 'lucide-react'; // Assuming available icons
+import { Music, Wind, Music2 } from 'lucide-react';
+import type { InstrumentId } from '../audio/types';
 import './InstrumentSelector.css';
 
 const instruments = [
-    { id: 'guitar', name: 'Guitar', icon: Guitar, color: 'var(--color-primary)' },
-    { id: 'piano', name: 'Piano', icon: Music, color: 'var(--color-accent)' }, // Using Music generic for Piano if specific unavailable
-    { id: 'drums', name: 'Drums', icon: Drum, color: 'var(--color-success)' }, // Using a generic icon if Drum not available, let's check imports
+    { id: 'violin' as InstrumentId, name: 'Violin', icon: Music, color: 'var(--color-primary)' },
+    { id: 'flute' as InstrumentId, name: 'Flute', icon: Wind, color: 'var(--color-accent)', disabled: true },
+    { id: 'cello' as InstrumentId, name: 'Cello', icon: Music2, color: 'var(--color-success)', disabled: true },
 ];
 
-export function InstrumentSelector() {
-    const [selectedId, setSelectedId] = useState('guitar');
+interface InstrumentSelectorProps {
+    value: InstrumentId;
+    onChange: (id: InstrumentId) => void;
+}
 
+export function InstrumentSelector({ value, onChange }: InstrumentSelectorProps) {
     return (
         <div className="card instrument-card">
             <div className="card-header">
@@ -24,16 +27,16 @@ export function InstrumentSelector() {
                 {instruments.map((inst) => (
                     <button
                         key={inst.id}
-                        className={`instrument-option ${selectedId === inst.id ? 'active' : ''}`}
-                        onClick={() => setSelectedId(inst.id)}
+                        className={`instrument-option ${value === inst.id ? 'active' : ''} ${inst.disabled ? 'disabled-inst' : ''}`}
+                        onClick={() => onChange(inst.id)}
                         style={{ '--active-color': inst.color } as React.CSSProperties}
                     >
                         <div className="instrument-icon">
-                            {/* Render icon component */}
                             <inst.icon size={24} />
                         </div>
                         <span className="instrument-name">{inst.name}</span>
-                        {selectedId === inst.id && <div className="active-indicator"></div>}
+                        {inst.disabled && <span className="coming-soon">Soon</span>}
+                        {value === inst.id && <div className="active-indicator"></div>}
                     </button>
                 ))}
             </div>

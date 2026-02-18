@@ -1,115 +1,107 @@
-import type { SoundParams } from './types';
+import * as Tone from 'tone';
+import type { SoundParams, InstrumentId } from './types';
+import type { Instrument } from './instruments/Instrument';
+import { ViolinInstrument } from './instruments/violin';
 
 /**
- * Web Audio API engine for continuous tone generation.
+ * Sound engine that manages the shared signal chain and delegates
+ * tone generation to the currently selected Instrument.
  *
- * Signal chain:
- *   Oscillator → GainNode (with tremolo LFO) → BiquadFilter → StereoPanner → Destination
+ * Shared chain (owned by engine):
+ *   instrument output → filter → panner → Tone.Destination
+ *
+ * Each Instrument creates its own oscillators/gain internally
+ * and connects its output into the shared chain.
  */
 export class SoundEngine {
-    private ctx: AudioContext | null = null;
-    private oscillator: OscillatorNode | null = null;
-    private gainNode: GainNode | null = null;
-    private filter: BiquadFilterNode | null = null;
-    private panner: StereoPannerNode | null = null;
-    private lfo: OscillatorNode | null = null;
-    private lfoGain: GainNode | null = null;
+    private filter: Tone.Filter | null = null;
+    private panner: Tone.Panner | null = null;
+    private instrument: Instrument | null = null;
+    private _instrumentId: InstrumentId = 'violin';
     private _isPlaying = false;
 
     get isPlaying(): boolean {
         return this._isPlaying;
     }
 
-    /** Initialise (or resume) the AudioContext and start the oscillator. */
+    get instrumentId(): InstrumentId {
+        return this._instrumentId;
+    }
+
+    /** Start audio playback. Handles the user-gesture AudioContext requirement. */
     async start(): Promise<void> {
         if (this._isPlaying) return;
 
-        // Create or resume context (handles user-gesture requirement)
-        if (!this.ctx) {
-            this.ctx = new AudioContext();
-        }
-        if (this.ctx.state === 'suspended') {
-            await this.ctx.resume();
-        }
+        // Tone.js handles AudioContext creation + resume for us
+        await Tone.start();
 
-        const ctx = this.ctx;
+        // ── Shared chain: filter → panner → destination ──────────────────
+        this.filter = new Tone.Filter({ type: 'lowpass', frequency: 4000, Q: 1 });
+        this.panner = new Tone.Panner(0);
 
-        // ── Main oscillator ─────────────────────────────────────────────────
-        this.oscillator = ctx.createOscillator();
-        this.oscillator.type = 'sine';
-        this.oscillator.frequency.value = 440;
-
-        // ── Gain ─────────────────────────────────────────────────────────────
-        this.gainNode = ctx.createGain();
-        this.gainNode.gain.value = 0.3;
-
-        // ── Biquad low-pass filter ───────────────────────────────────────────
-        this.filter = ctx.createBiquadFilter();
-        this.filter.type = 'lowpass';
-        this.filter.frequency.value = 4000;
-        this.filter.Q.value = 1;
-
-        // ── Stereo panner ────────────────────────────────────────────────────
-        this.panner = ctx.createStereoPanner();
-        this.panner.pan.value = 0;
-
-        // ── Tremolo LFO ──────────────────────────────────────────────────────
-        this.lfo = ctx.createOscillator();
-        this.lfo.type = 'sine';
-        this.lfo.frequency.value = 0;
-
-        this.lfoGain = ctx.createGain();
-        this.lfoGain.gain.value = 0.3; // tremolo depth
-
-        // LFO → lfoGain → main gain AudioParam
-        this.lfo.connect(this.lfoGain);
-        this.lfoGain.connect(this.gainNode.gain);
-
-        // ── Chain ────────────────────────────────────────────────────────────
-        this.oscillator.connect(this.gainNode);
-        this.gainNode.connect(this.filter);
         this.filter.connect(this.panner);
-        this.panner.connect(ctx.destination);
+        this.panner.toDestination();
 
-        this.oscillator.start();
-        this.lfo.start();
+        // ── Create & connect the selected instrument ─────────────────────
+        this.instrument = this.createInstrument(this._instrumentId);
+        this.instrument.connect(this.filter);
+        this.instrument.start();
+
         this._isPlaying = true;
     }
 
-    /** Stop all nodes and release resources. */
+    /** Stop playback and dispose of all nodes. */
     stop(): void {
         if (!this._isPlaying) return;
 
-        this.oscillator?.stop();
-        this.lfo?.stop();
-        this.oscillator?.disconnect();
-        this.gainNode?.disconnect();
-        this.filter?.disconnect();
-        this.panner?.disconnect();
-        this.lfo?.disconnect();
-        this.lfoGain?.disconnect();
+        this.instrument?.stop();
+        this.instrument = null;
 
-        this.oscillator = null;
-        this.gainNode = null;
+        this.filter?.dispose();
+        this.panner?.dispose();
         this.filter = null;
         this.panner = null;
-        this.lfo = null;
-        this.lfoGain = null;
 
         this._isPlaying = false;
     }
 
-    /** Smoothly update all sound parameters. Uses `setTargetAtTime` to avoid clicks. */
-    updateParams(params: SoundParams): void {
-        if (!this._isPlaying || !this.ctx) return;
-        const t = this.ctx.currentTime;
-        const smooth = 0.02; // 20 ms smoothing constant
+    /** Switch to a different instrument. If playing, hot-swaps it. */
+    setInstrument(id: InstrumentId): void {
+        this._instrumentId = id;
 
-        this.oscillator?.frequency.setTargetAtTime(params.frequency, t, smooth);
-        this.oscillator?.detune.setTargetAtTime(params.detune, t, smooth);
-        this.gainNode?.gain.setTargetAtTime(params.gain, t, smooth);
-        this.filter?.frequency.setTargetAtTime(params.filterCutoff, t, smooth);
-        this.panner?.pan.setTargetAtTime(params.pan, t, smooth);
-        this.lfo?.frequency.setTargetAtTime(params.tremoloRate, t, smooth);
+        if (this._isPlaying && this.filter) {
+            // Hot-swap: stop old instrument, create and start new one
+            this.instrument?.stop();
+            this.instrument = this.createInstrument(id);
+            this.instrument.connect(this.filter);
+            this.instrument.start();
+        }
+    }
+
+    /** Apply real-time parameter updates. */
+    updateParams(params: SoundParams): void {
+        if (!this._isPlaying) return;
+
+        // Update shared chain
+        if (this.filter) this.filter.frequency.value = params.filterCutoff;
+        if (this.panner) this.panner.pan.value = params.pan;
+
+        // Update instrument-specific params
+        this.instrument?.updateParams(params);
+    }
+
+    // ── Private ────────────────────────────────────────────────────────────
+
+    private createInstrument(id: InstrumentId): Instrument {
+        switch (id) {
+            case 'violin':
+                return new ViolinInstrument();
+
+            // Flute and Cello will be added later — fall back to violin for now
+            case 'flute':
+            case 'cello':
+            default:
+                return new ViolinInstrument();
+        }
     }
 }

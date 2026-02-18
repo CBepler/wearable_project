@@ -36,6 +36,9 @@ export interface CalibrationConfig {
     sensitivity: number;
 }
 
+/** Available instrument identifiers. */
+export type InstrumentId = 'violin' | 'flute' | 'cello';
+
 /** Default sensor data — device at rest on a table. */
 export const DEFAULT_SENSOR_DATA: SensorData = {
     accelX: 0,

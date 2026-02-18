@@ -59,3 +59,25 @@
     opacity: 0.1;
     pointer-events: none;
 }
+
+/* Disabled / coming soon */
+.instrument-option.disabled-inst {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.instrument-option.disabled-inst:hover {
+    transform: none;
+    background-color: var(--color-bg);
+}
+
+.coming-soon {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    background: var(--color-surface-hover);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+}

@@ -6,7 +6,7 @@ import { CalibrationPanel } from './components/CalibrationPanel';
 import { InstrumentSelector } from './components/InstrumentSelector';
 import { SensorSimulator } from './components/SensorSimulator';
 import { SoundOutputDisplay } from './components/SoundOutputDisplay';
-import type { SensorData, SoundParams } from './audio/types';
+import type { SensorData, SoundParams, InstrumentId } from './audio/types';
 import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION } from './audio/types';
 import { mapSensorToSound } from './audio/sensorEngine';
 import { SoundEngine } from './audio/soundEngine';
@@ -15,6 +15,7 @@ function App() {
   // ── Shared state ──────────────────────────────────────────────────────
   const [sensorData, setSensorData] = useState<SensorData>(DEFAULT_SENSOR_DATA);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [instrumentId, setInstrumentId] = useState<InstrumentId>('violin');
 
   // Sound engine singleton
   const engineRef = useRef<SoundEngine | null>(null);
@@ -35,16 +36,26 @@ function App() {
     }
   }, [soundParams, isPlaying]);
 
+  // ── Instrument selection ──────────────────────────────────────────────
+  const handleInstrumentChange = useCallback((id: InstrumentId) => {
+    setInstrumentId(id);
+    engineRef.current?.setInstrument(id);
+  }, []);
+
   // ── Play / Stop ───────────────────────────────────────────────────────
   const handleTogglePlay = useCallback(async () => {
-    const engine = engineRef.current!;
-    if (engine.isPlaying) {
-      engine.stop();
-      setIsPlaying(false);
-    } else {
-      await engine.start();
-      engine.updateParams(soundParams);
-      setIsPlaying(true);
+    try {
+      const engine = engineRef.current!;
+      if (engine.isPlaying) {
+        engine.stop();
+        setIsPlaying(false);
+      } else {
+        await engine.start();
+        engine.updateParams(soundParams);
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      console.error('[SoundEngine] Play/Stop error:', err);
     }
   }, [soundParams]);
 
@@ -60,7 +71,7 @@ function App() {
       <Dashboard>
         <SensorGraph sensorData={sensorData} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
-          <InstrumentSelector />
+          <InstrumentSelector value={instrumentId} onChange={handleInstrumentChange} />
           <CalibrationPanel />
         </div>
       </Dashboard>
