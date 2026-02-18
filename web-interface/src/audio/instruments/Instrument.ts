@@ -1,21 +1,28 @@
-import type { SoundParams } from '../types';
 import type * as Tone from 'tone';
 
 /**
- * Abstract interface that all instruments must implement.
- * Each instrument creates its own Tone.js nodes and connects
- * them to the provided output node.
+ * Simplified instrument interface.
+ * Each instrument owns only its synth — effects are managed by SoundEngine.
  */
 export interface Instrument {
-    /** Wire the instrument's output into the signal chain. */
+    /** Connect synth output to the effects chain. */
     connect(destination: Tone.InputNode): void;
 
-    /** Start the instrument (begin producing sound). */
-    start(): void;
+    /** Begin producing sound (sustained). */
+    start(frequency: number): void;
 
-    /** Stop and dispose of all internal nodes. */
+    /** Release and dispose. */
     stop(): void;
 
-    /** Apply real-time parameter updates from the sensor mapping. */
-    updateParams(params: SoundParams): void;
+    /** Set the playing note by frequency. */
+    setNote(frequency: number): void;
+
+    /** Set volume in dB. */
+    setVolume(dB: number): void;
+
+    /** Set detune in cents. */
+    setDetune(cents: number): void;
+
+    /** Set brightness / modulation depth (0–1 normalized). */
+    setBrightness(value: number): void;
 }

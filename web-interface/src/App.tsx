@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { SensorGraph } from './components/SensorGraph';
@@ -6,9 +6,8 @@ import { CalibrationPanel } from './components/CalibrationPanel';
 import { InstrumentSelector } from './components/InstrumentSelector';
 import { SensorSimulator } from './components/SensorSimulator';
 import { SoundOutputDisplay } from './components/SoundOutputDisplay';
-import type { SensorData, SoundParams, InstrumentId } from './audio/types';
+import type { SensorData, InstrumentId } from './audio/types';
 import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION } from './audio/types';
-import { mapSensorToSound } from './audio/sensorEngine';
 import { SoundEngine } from './audio/soundEngine';
 
 function App() {
@@ -23,18 +22,12 @@ function App() {
     engineRef.current = new SoundEngine();
   }
 
-  // ── Compute sound params whenever sensor data changes ─────────────────
-  const soundParams: SoundParams = useMemo(
-    () => mapSensorToSound(sensorData, DEFAULT_CALIBRATION),
-    [sensorData],
-  );
-
-  // Push params to the audio engine
+  // Push sensor data directly to the Tone.js engine
   useEffect(() => {
     if (isPlaying) {
-      engineRef.current?.updateParams(soundParams);
+      engineRef.current?.updateFromSensors(sensorData, DEFAULT_CALIBRATION);
     }
-  }, [soundParams, isPlaying]);
+  }, [sensorData, isPlaying]);
 
   // ── Instrument selection ──────────────────────────────────────────────
   const handleInstrumentChange = useCallback((id: InstrumentId) => {
@@ -51,13 +44,13 @@ function App() {
         setIsPlaying(false);
       } else {
         await engine.start();
-        engine.updateParams(soundParams);
+        engine.updateFromSensors(sensorData, DEFAULT_CALIBRATION);
         setIsPlaying(true);
       }
     } catch (err) {
       console.error('[SoundEngine] Play/Stop error:', err);
     }
-  }, [soundParams]);
+  }, [sensorData]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -65,6 +58,9 @@ function App() {
       engineRef.current?.stop();
     };
   }, []);
+
+  // Get display params from the engine (updated every render when playing)
+  const displayParams = engineRef.current?.displayParams;
 
   return (
     <Layout>
@@ -84,7 +80,7 @@ function App() {
           isPlaying={isPlaying}
           onTogglePlay={handleTogglePlay}
         />
-        <SoundOutputDisplay params={soundParams} isPlaying={isPlaying} />
+        <SoundOutputDisplay params={displayParams} isPlaying={isPlaying} />
       </div>
     </Layout>
   );

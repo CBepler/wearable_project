@@ -14,22 +14,6 @@ export interface SensorData {
     yaw: number;
 }
 
-/** Computed sound parameters derived from sensor data. */
-export interface SoundParams {
-    /** Oscillator frequency in Hz (130–1047, C3–C6) */
-    frequency: number;
-    /** Master gain (0–1) */
-    gain: number;
-    /** Frequency detune in cents (-100 to +100) */
-    detune: number;
-    /** Stereo pan position (-1 left, 0 center, +1 right) */
-    pan: number;
-    /** Tremolo LFO rate in Hz (0–15) */
-    tremoloRate: number;
-    /** Low-pass filter cutoff frequency in Hz (200–8000) */
-    filterCutoff: number;
-}
-
 /** User-adjustable calibration settings. */
 export interface CalibrationConfig {
     /** Volume sensitivity multiplier (0–1 scale from the 0-100 slider) */
@@ -38,6 +22,28 @@ export interface CalibrationConfig {
 
 /** Available instrument identifiers. */
 export type InstrumentId = 'violin' | 'flute' | 'cello';
+
+/**
+ * Display-only parameters derived from sensor data.
+ * Used by the SoundOutputDisplay component for visual feedback.
+ * These mirror what the engine is doing internally.
+ */
+export interface DisplayParams {
+    /** Current note name, e.g. "C4", "G#3" */
+    note: string;
+    /** Current frequency in Hz */
+    frequency: number;
+    /** Volume as 0–100% */
+    volumePct: number;
+    /** Detune in cents */
+    detune: number;
+    /** Pan position: -1 left, 0 center, +1 right */
+    pan: number;
+    /** Tremolo depth 0–100% */
+    tremoloPct: number;
+    /** Brightness 0–100% */
+    brightnessPct: number;
+}
 
 /** Default sensor data — device at rest on a table. */
 export const DEFAULT_SENSOR_DATA: SensorData = {

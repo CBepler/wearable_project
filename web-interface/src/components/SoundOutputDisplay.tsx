@@ -1,9 +1,9 @@
 import { Volume2 } from 'lucide-react';
-import type { SoundParams } from '../audio/types';
+import type { DisplayParams } from '../audio/types';
 import './SoundOutputDisplay.css';
 
 interface SoundOutputDisplayProps {
-    params: SoundParams;
+    params: DisplayParams | undefined;
     isPlaying: boolean;
 }
 
@@ -16,54 +16,61 @@ interface MeterConfig {
     color: string;
 }
 
+const DEFAULT_DISPLAY: DisplayParams = {
+    note: '—', frequency: 0, volumePct: 0,
+    detune: 0, pan: 0, tremoloPct: 0, brightnessPct: 0,
+};
+
 export function SoundOutputDisplay({ params, isPlaying }: SoundOutputDisplayProps) {
+    const p = params ?? DEFAULT_DISPLAY;
+
     const meters: MeterConfig[] = [
         {
-            label: 'Frequency',
-            value: params.frequency,
-            displayValue: `${params.frequency.toFixed(0)} Hz`,
+            label: 'Note',
+            value: p.frequency,
+            displayValue: `${p.note}  (${p.frequency} Hz)`,
             min: 130,
             max: 1047,
             color: 'var(--color-primary)',
         },
         {
             label: 'Volume',
-            value: params.gain,
-            displayValue: `${(params.gain * 100).toFixed(0)}%`,
+            value: p.volumePct,
+            displayValue: `${p.volumePct}%`,
             min: 0,
-            max: 1,
+            max: 100,
             color: 'var(--color-success)',
         },
         {
             label: 'Detune',
-            value: params.detune + 100, // shift to 0–200 range for the bar
-            displayValue: `${params.detune > 0 ? '+' : ''}${params.detune.toFixed(0)}¢`,
+            value: p.detune + 100,
+            displayValue: `${p.detune > 0 ? '+' : ''}${p.detune}¢`,
             min: 0,
             max: 200,
             color: 'var(--color-accent)',
         },
         {
             label: 'Pan',
-            value: params.pan + 1, // shift to 0–2 range
-            displayValue: params.pan < -0.05 ? `L ${Math.abs(params.pan * 100).toFixed(0)}%` : params.pan > 0.05 ? `R ${(params.pan * 100).toFixed(0)}%` : 'Center',
+            value: p.pan + 1,
+            displayValue: p.pan < -0.05 ? `L ${Math.abs(p.pan * 100).toFixed(0)}%` : p.pan > 0.05 ? `R ${(p.pan * 100).toFixed(0)}%` : 'Center',
             min: 0,
             max: 2,
             color: 'var(--color-warning)',
         },
         {
             label: 'Tremolo',
-            value: params.tremoloRate,
-            displayValue: `${params.tremoloRate.toFixed(1)} Hz`,
+            value: p.tremoloPct,
+            displayValue: `${p.tremoloPct}%`,
             min: 0,
-            max: 15,
+            max: 100,
             color: 'var(--color-primary)',
         },
         {
-            label: 'Filter',
-            value: params.filterCutoff,
-            displayValue: `${params.filterCutoff.toFixed(0)} Hz`,
-            min: 200,
-            max: 8000,
+            label: 'Brightness',
+            value: p.brightnessPct,
+            displayValue: `${p.brightnessPct}%`,
+            min: 0,
+            max: 100,
             color: 'var(--color-accent)',
         },
     ];
