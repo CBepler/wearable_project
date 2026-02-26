@@ -1,0 +1,43 @@
+/* ─── Simulator Page — viewport-fit, no-scroll layout ──────────────────── */
+
+.simulator-page {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: var(--spacing-lg);
+    height: 100%;
+    min-height: 0;
+}
+
+.sim-page-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.sim-page-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.sim-page-main .sim-card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sim-page-main .sim-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+    .simulator-page {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+}

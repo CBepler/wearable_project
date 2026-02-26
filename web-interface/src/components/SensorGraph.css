@@ -6,10 +6,10 @@
     background-color: var(--color-surface);
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-border);
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     box-shadow: var(--shadow-md);
 }
 
@@ -73,14 +73,12 @@
 
 .chart-container {
     width: 100%;
-    /* Height is controlled by ResponsiveContainer */
 }
 
 .legend {
     display: flex;
-    gap: var(--spacing-xl);
+    gap: var(--spacing-md);
     justify-content: center;
-    margin-top: var(--spacing-sm);
 }
 
 .legend-item {

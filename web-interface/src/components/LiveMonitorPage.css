@@ -1,0 +1,31 @@
+/* ─── Live Monitor Page — viewport-fit, no-scroll layout ───────────────── */
+
+.live-monitor-page {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: var(--spacing-lg);
+    height: 100%;
+    min-height: 0;
+}
+
+.monitor-main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.monitor-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    min-height: 0;
+}
+
+@media (max-width: 900px) {
+    .live-monitor-page {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+}

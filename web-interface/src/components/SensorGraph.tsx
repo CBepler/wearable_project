@@ -61,7 +61,7 @@ export function SensorGraph({ sensorData }: SensorGraphProps) {
             </div>
 
             <div className="chart-container">
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={220}>
                     <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                         <XAxis dataKey="time" hide={true} />

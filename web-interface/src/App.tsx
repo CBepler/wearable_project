@@ -1,22 +1,23 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Layout } from './components/Layout';
-import { Dashboard } from './components/Dashboard';
-import { SensorGraph } from './components/SensorGraph';
-import { CalibrationPanel } from './components/CalibrationPanel';
-import { InstrumentSelector } from './components/InstrumentSelector';
-import { SensorSimulator } from './components/SensorSimulator';
-import { SoundOutputDisplay } from './components/SoundOutputDisplay';
+import type { PageId } from './components/Layout';
+import { SimulatorPage } from './components/SimulatorPage';
+import { LiveMonitorPage } from './components/LiveMonitorPage';
 import type { SensorData, InstrumentId } from './audio/types';
 import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION, getSensorMode } from './audio/types';
 import { SoundEngine } from './audio/soundEngine';
+import './App.css';
 
 function App() {
+  // ── Navigation ────────────────────────────────────────────────────────
+  const [activePage, setActivePage] = useState<PageId>('monitor');
+
   // ── Shared state ──────────────────────────────────────────────────────
   const [sensorData, setSensorData] = useState<SensorData>(DEFAULT_SENSOR_DATA);
   const [isPlaying, setIsPlaying] = useState(false);
   const [instrumentId, setInstrumentId] = useState<InstrumentId>('violin');
 
-  // Sensor mode is derived from instrument, not independent state
+  // Sensor mode is derived from instrument
   const sensorMode = getSensorMode(instrumentId);
 
   // Sound engine singleton
@@ -25,7 +26,7 @@ function App() {
     engineRef.current = new SoundEngine();
   }
 
-  // Push sensor data directly to the Tone.js engine
+  // Push sensor data to engine
   useEffect(() => {
     if (isPlaying) {
       engineRef.current?.updateFromSensors(sensorData, DEFAULT_CALIBRATION);
@@ -62,34 +63,31 @@ function App() {
     };
   }, []);
 
-  // Get display params from the engine (updated every render when playing)
   const displayParams = engineRef.current?.displayParams;
 
   return (
-    <Layout>
-      <Dashboard>
-        <SensorGraph sensorData={sensorData} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
-          <InstrumentSelector value={instrumentId} onChange={handleInstrumentChange} />
-          <CalibrationPanel />
-        </div>
-      </Dashboard>
-
-      {/* Simulator section */}
-      <div className="simulator-section">
-        <SensorSimulator
+    <Layout activePage={activePage} onPageChange={setActivePage}>
+      {activePage === 'monitor' ? (
+        <LiveMonitorPage
+          sensorData={sensorData}
+          isPlaying={isPlaying}
+          sensorMode={sensorMode}
+          instrumentId={instrumentId}
+          onInstrumentChange={handleInstrumentChange}
+          displayParams={displayParams}
+        />
+      ) : (
+        <SimulatorPage
           sensorData={sensorData}
           onSensorChange={setSensorData}
           isPlaying={isPlaying}
           onTogglePlay={handleTogglePlay}
           sensorMode={sensorMode}
+          instrumentId={instrumentId}
+          onInstrumentChange={handleInstrumentChange}
+          displayParams={displayParams}
         />
-        <SoundOutputDisplay
-          params={displayParams}
-          isPlaying={isPlaying}
-          sensorMode={sensorMode}
-        />
-      </div>
+      )}
     </Layout>
   );
 }

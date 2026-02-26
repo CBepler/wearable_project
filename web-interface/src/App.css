@@ -1,14 +1,1 @@
-/* ─── Simulator Section ────────────────────────────────────────────────── */
-
-.simulator-section {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--spacing-lg);
-  margin-top: var(--spacing-lg);
-}
-
-@media (min-width: 1024px) {
-  .simulator-section {
-    grid-template-columns: 1fr 1fr;
-  }
-}
+/* App-level styles are minimal — pages handle their own layout */
