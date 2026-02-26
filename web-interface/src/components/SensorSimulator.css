@@ -10,6 +10,32 @@
   align-items: center;
 }
 
+/* ─── Mode Badge ───────────────────────────────────────────────────────── */
+
+.sim-mode-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid;
+}
+
+.sim-mode-badge.analog {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.sim-mode-badge.digital {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: rgba(244, 114, 182, 0.08);
+}
+
+/* ─── Play / Reset ─────────────────────────────────────────────────────── */
+
 .sim-play-btn {
   display: flex;
   align-items: center;
@@ -83,7 +109,7 @@
 
 .sim-slider-row {
   display: grid;
-  grid-template-columns: 48px 1fr 80px;
+  grid-template-columns: 90px 1fr 90px;
   align-items: center;
   gap: var(--spacing-sm);
   padding: 4px 0;
@@ -96,16 +122,37 @@
 }
 
 .sim-slider-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 600;
   font-size: var(--font-size-sm);
   text-align: right;
   padding-right: 4px;
 }
 
+.sim-finger-emoji {
+  font-size: 1rem;
+}
+
 .sim-slider-track-wrap {
   position: relative;
   display: flex;
   align-items: center;
+}
+
+/* ─── Threshold line (digital mode) ────────────────────────────────────── */
+
+.sim-threshold-line {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--color-accent);
+  opacity: 0.5;
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* ─── Range Input ──────────────────────────────────────────────────────── */
@@ -154,7 +201,31 @@
   cursor: pointer;
 }
 
-/* ─── Value Badge ──────────────────────────────────────────────────────── */
+/* ─── Value Area (badge + digital dot) ─────────────────────────────────── */
+
+.sim-value-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.sim-digital-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-surface-hover);
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.sim-digital-dot.on {
+  box-shadow: 0 0 8px currentColor;
+}
+
+.sim-digital-dot.off {
+  opacity: 0.4;
+}
 
 .sim-value-badge {
   font-family: monospace;
@@ -166,4 +237,5 @@
   border-radius: var(--radius-sm);
   padding: 2px 6px;
   white-space: nowrap;
+  min-width: 48px;
 }

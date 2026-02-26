@@ -7,7 +7,7 @@ import { InstrumentSelector } from './components/InstrumentSelector';
 import { SensorSimulator } from './components/SensorSimulator';
 import { SoundOutputDisplay } from './components/SoundOutputDisplay';
 import type { SensorData, InstrumentId } from './audio/types';
-import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION } from './audio/types';
+import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION, getSensorMode } from './audio/types';
 import { SoundEngine } from './audio/soundEngine';
 
 function App() {
@@ -15,6 +15,9 @@ function App() {
   const [sensorData, setSensorData] = useState<SensorData>(DEFAULT_SENSOR_DATA);
   const [isPlaying, setIsPlaying] = useState(false);
   const [instrumentId, setInstrumentId] = useState<InstrumentId>('violin');
+
+  // Sensor mode is derived from instrument, not independent state
+  const sensorMode = getSensorMode(instrumentId);
 
   // Sound engine singleton
   const engineRef = useRef<SoundEngine | null>(null);
@@ -79,8 +82,13 @@ function App() {
           onSensorChange={setSensorData}
           isPlaying={isPlaying}
           onTogglePlay={handleTogglePlay}
+          sensorMode={sensorMode}
         />
-        <SoundOutputDisplay params={displayParams} isPlaying={isPlaying} />
+        <SoundOutputDisplay
+          params={displayParams}
+          isPlaying={isPlaying}
+          sensorMode={sensorMode}
+        />
       </div>
     </Layout>
   );

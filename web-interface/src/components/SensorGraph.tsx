@@ -2,25 +2,25 @@ import { useState, useEffect, useRef } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { Activity } from 'lucide-react';
 import type { SensorData } from '../audio/types';
+import { FINGER_NAMES, FINGER_COLORS } from '../audio/types';
 import './SensorGraph.css';
 
 const MAX_POINTS = 60;
 
 interface DataPoint {
     time: number;
-    v1: number;
-    v2: number;
-    v3: number;
+    thumb: number;
+    index: number;
+    middle: number;
+    ring: number;
+    pinky: number;
 }
-
-type ViewMode = 'accel' | 'rotation';
 
 interface SensorGraphProps {
     sensorData: SensorData;
 }
 
 export function SensorGraph({ sensorData }: SensorGraphProps) {
-    const [viewMode, setViewMode] = useState<ViewMode>('accel');
     const [chartData, setChartData] = useState<DataPoint[]>([]);
     const tickRef = useRef(0);
 
@@ -31,10 +31,14 @@ export function SensorGraph({ sensorData }: SensorGraphProps) {
             const t = tickRef.current;
 
             setChartData((prev) => {
-                const point: DataPoint =
-                    viewMode === 'accel'
-                        ? { time: t, v1: sensorData.accelX, v2: sensorData.accelY, v3: sensorData.accelZ }
-                        : { time: t, v1: sensorData.roll, v2: sensorData.pitch, v3: sensorData.yaw };
+                const point: DataPoint = {
+                    time: t,
+                    thumb: sensorData.thumb,
+                    index: sensorData.index,
+                    middle: sensorData.middle,
+                    ring: sensorData.ring,
+                    pinky: sensorData.pinky,
+                };
 
                 const next = [...prev, point];
                 return next.length > MAX_POINTS ? next.slice(next.length - MAX_POINTS) : next;
@@ -42,41 +46,16 @@ export function SensorGraph({ sensorData }: SensorGraphProps) {
         }, 100);
 
         return () => clearInterval(id);
-    }, [sensorData, viewMode]);
-
-    // Reset chart data when switching views
-    useEffect(() => {
-        setChartData([]);
-        tickRef.current = 0;
-    }, [viewMode]);
-
-    const labels =
-        viewMode === 'accel'
-            ? { v1: 'Accel X', v2: 'Accel Y', v3: 'Accel Z', unit: 'm/s²' }
-            : { v1: 'Roll', v2: 'Pitch', v3: 'Yaw', unit: '°' };
+    }, [sensorData]);
 
     return (
         <div className="card sensor-graph-card">
             <div className="card-header">
                 <div className="card-title">
                     <Activity size={20} className="text-primary" />
-                    <h3>Motion Data</h3>
+                    <h3>Flex Sensor Data</h3>
                 </div>
                 <div className="card-actions">
-                    <div className="view-toggle">
-                        <button
-                            className={`toggle-btn ${viewMode === 'accel' ? 'active' : ''}`}
-                            onClick={() => setViewMode('accel')}
-                        >
-                            Accel
-                        </button>
-                        <button
-                            className={`toggle-btn ${viewMode === 'rotation' ? 'active' : ''}`}
-                            onClick={() => setViewMode('rotation')}
-                        >
-                            Rotation
-                        </button>
-                    </div>
                     <span className="live-badge">LIVE</span>
                 </div>
             </div>
@@ -91,6 +70,8 @@ export function SensorGraph({ sensorData }: SensorGraphProps) {
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
+                            domain={[0, 1]}
+                            ticks={[0, 0.25, 0.5, 0.75, 1]}
                         />
                         <Tooltip
                             contentStyle={{
@@ -99,27 +80,31 @@ export function SensorGraph({ sensorData }: SensorGraphProps) {
                                 color: 'var(--color-text)',
                                 borderRadius: 'var(--radius-md)',
                             }}
+                            formatter={(value: number | undefined) => value != null ? `${(value * 100).toFixed(0)}%` : '—'}
                         />
-                        <Line type="monotone" dataKey="v1" name={labels.v1} stroke="var(--color-primary)" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
-                        <Line type="monotone" dataKey="v2" name={labels.v2} stroke="var(--color-accent)" strokeWidth={2} dot={false} />
-                        <Line type="monotone" dataKey="v3" name={labels.v3} stroke="var(--color-success)" strokeWidth={2} dot={false} />
+                        {FINGER_NAMES.map((name) => (
+                            <Line
+                                key={name}
+                                type="monotone"
+                                dataKey={name}
+                                name={name.charAt(0).toUpperCase() + name.slice(1)}
+                                stroke={FINGER_COLORS[name]}
+                                strokeWidth={2}
+                                dot={false}
+                                activeDot={{ r: 5 }}
+                            />
+                        ))}
                     </LineChart>
                 </ResponsiveContainer>
             </div>
 
             <div className="legend">
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: 'var(--color-primary)' }}></span>
-                    <span>{labels.v1}</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: 'var(--color-accent)' }}></span>
-                    <span>{labels.v2}</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: 'var(--color-success)' }}></span>
-                    <span>{labels.v3}</span>
-                </div>
+                {FINGER_NAMES.map((name) => (
+                    <div className="legend-item" key={name}>
+                        <span className="legend-color" style={{ backgroundColor: FINGER_COLORS[name] }} />
+                        <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
+                    </div>
+                ))}
             </div>
         </div>
     );

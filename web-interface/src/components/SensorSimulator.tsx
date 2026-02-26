@@ -1,36 +1,29 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Sliders, Play, Square, RotateCcw } from 'lucide-react';
-import type { SensorData } from '../audio/types';
-import { DEFAULT_SENSOR_DATA } from '../audio/types';
+import { Hand, Play, Square, RotateCcw } from 'lucide-react';
+import type { SensorData, SensorMode, FingerName } from '../audio/types';
+import { DEFAULT_SENSOR_DATA, FINGER_NAMES, FINGER_COLORS, SENSITIVITY_THRESHOLD } from '../audio/types';
 import './SensorSimulator.css';
 
 interface SliderConfig {
-    key: keyof SensorData;
+    key: FingerName;
     label: string;
-    min: number;
-    max: number;
-    step: number;
-    unit: string;
+    emoji: string;
     color: string;
 }
 
-const ACCEL_SLIDERS: SliderConfig[] = [
-    { key: 'accelX', label: 'X', min: -20, max: 20, step: 0.1, unit: 'm/s²', color: 'var(--color-primary)' },
-    { key: 'accelY', label: 'Y', min: -20, max: 20, step: 0.1, unit: 'm/s²', color: 'var(--color-accent)' },
-    { key: 'accelZ', label: 'Z', min: -20, max: 20, step: 0.1, unit: 'm/s²', color: 'var(--color-success)' },
-];
-
-const ROTATION_SLIDERS: SliderConfig[] = [
-    { key: 'roll', label: 'Roll', min: -180, max: 180, step: 1, unit: '°', color: 'var(--color-accent)' },
-    { key: 'pitch', label: 'Pitch', min: -180, max: 180, step: 1, unit: '°', color: 'var(--color-primary)' },
-    { key: 'yaw', label: 'Yaw', min: -180, max: 180, step: 1, unit: '°', color: 'var(--color-warning)' },
-];
+const FINGER_SLIDERS: SliderConfig[] = FINGER_NAMES.map((name) => ({
+    key: name,
+    label: name.charAt(0).toUpperCase() + name.slice(1),
+    emoji: { thumb: '👍', index: '👆', middle: '🖕', ring: '💍', pinky: '🤙' }[name],
+    color: FINGER_COLORS[name],
+}));
 
 interface SensorSimulatorProps {
     sensorData: SensorData;
     onSensorChange: (data: SensorData) => void;
     isPlaying: boolean;
     onTogglePlay: () => void;
+    sensorMode: SensorMode;
 }
 
 export function SensorSimulator({
@@ -38,9 +31,10 @@ export function SensorSimulator({
     onSensorChange,
     isPlaying,
     onTogglePlay,
+    sensorMode,
 }: SensorSimulatorProps) {
     const handleSliderChange = useCallback(
-        (key: keyof SensorData, value: number) => {
+        (key: FingerName, value: number) => {
             onSensorChange({ ...sensorData, [key]: value });
         },
         [sensorData, onSensorChange],
@@ -50,12 +44,11 @@ export function SensorSimulator({
         onSensorChange({ ...DEFAULT_SENSOR_DATA });
     }, [onSensorChange]);
 
-    // Track which slider label is being hovered for glow effect
     const [hoveredSlider, setHoveredSlider] = useState<string | null>(null);
 
-    // Refs for smooth dragging — updates state at rAF rate
+    // rAF-throttled updates for smooth dragging
     const rafRef = useRef<number | null>(null);
-    const pendingUpdate = useRef<{ key: keyof SensorData; value: number } | null>(null);
+    const pendingUpdate = useRef<{ key: FingerName; value: number } | null>(null);
 
     useEffect(() => {
         return () => {
@@ -64,7 +57,7 @@ export function SensorSimulator({
     }, []);
 
     const scheduleUpdate = useCallback(
-        (key: keyof SensorData, value: number) => {
+        (key: FingerName, value: number) => {
             pendingUpdate.current = { key, value };
             if (rafRef.current === null) {
                 rafRef.current = requestAnimationFrame(() => {
@@ -81,7 +74,8 @@ export function SensorSimulator({
 
     const renderSlider = (cfg: SliderConfig) => {
         const value = sensorData[cfg.key];
-        const pct = ((value - cfg.min) / (cfg.max - cfg.min)) * 100;
+        const pct = value * 100;
+        const isOn = sensorMode === 'digital' && value >= SENSITIVITY_THRESHOLD;
 
         return (
             <div
@@ -91,14 +85,21 @@ export function SensorSimulator({
                 onMouseLeave={() => setHoveredSlider(null)}
             >
                 <label className="sim-slider-label" style={{ color: cfg.color }}>
+                    <span className="sim-finger-emoji">{cfg.emoji}</span>
                     {cfg.label}
                 </label>
                 <div className="sim-slider-track-wrap">
+                    {sensorMode === 'digital' && (
+                        <div
+                            className="sim-threshold-line"
+                            style={{ left: `${SENSITIVITY_THRESHOLD * 100}%` }}
+                        />
+                    )}
                     <input
                         type="range"
-                        min={cfg.min}
-                        max={cfg.max}
-                        step={cfg.step}
+                        min={0}
+                        max={1}
+                        step={0.01}
                         value={value}
                         onChange={(e) => scheduleUpdate(cfg.key, Number(e.target.value))}
                         className="sim-range-slider"
@@ -108,9 +109,14 @@ export function SensorSimulator({
                         } as React.CSSProperties}
                     />
                 </div>
-                <span className="sim-value-badge" style={{ borderColor: cfg.color, color: cfg.color }}>
-                    {value.toFixed(cfg.step < 1 ? 1 : 0)}{cfg.unit}
-                </span>
+                <div className="sim-value-area">
+                    {sensorMode === 'digital' && (
+                        <span className={`sim-digital-dot ${isOn ? 'on' : 'off'}`} style={{ backgroundColor: isOn ? cfg.color : undefined }} />
+                    )}
+                    <span className="sim-value-badge" style={{ borderColor: cfg.color, color: cfg.color }}>
+                        {(value * 100).toFixed(0)}%
+                    </span>
+                </div>
             </div>
         );
     };
@@ -119,10 +125,13 @@ export function SensorSimulator({
         <div className="card sim-card">
             <div className="card-header">
                 <div className="card-title">
-                    <Sliders size={20} className="text-primary" />
+                    <Hand size={20} className="text-primary" />
                     <h3>Sensor Simulator</h3>
                 </div>
                 <div className="sim-actions">
+                    <span className={`sim-mode-badge ${sensorMode}`}>
+                        {sensorMode === 'analog' ? '~ Analog' : '⏻ Digital'}
+                    </span>
                     <button
                         className={`sim-play-btn ${isPlaying ? 'playing' : ''}`}
                         onClick={onTogglePlay}
@@ -139,13 +148,8 @@ export function SensorSimulator({
 
             <div className="sim-body">
                 <div className="sim-group">
-                    <h4 className="sim-group-title">Acceleration</h4>
-                    {ACCEL_SLIDERS.map(renderSlider)}
-                </div>
-
-                <div className="sim-group">
-                    <h4 className="sim-group-title">Rotation</h4>
-                    {ROTATION_SLIDERS.map(renderSlider)}
+                    <h4 className="sim-group-title">Finger Bend</h4>
+                    {FINGER_SLIDERS.map(renderSlider)}
                 </div>
             </div>
         </div>

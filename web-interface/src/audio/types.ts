@@ -1,17 +1,21 @@
-/** Raw 6-DOF sensor readings from the wearable device. */
+/** Finger names for the 5 flex sensors on one hand. */
+export const FINGER_NAMES = ['thumb', 'index', 'middle', 'ring', 'pinky'] as const;
+export type FingerName = (typeof FINGER_NAMES)[number];
+
+/**
+ * Raw flex-sensor readings from the wearable glove.
+ * Each value is normalised 0.0 (flat / no bend) to 1.0 (fully bent).
+ *
+ * The sensor itself outputs resistance (flat ≈ 10 kΩ, bent ≈ 125 kΩ).
+ * Normalisation is assumed to happen before values reach this interface
+ * (either on the MCU or at the BLE ingestion layer).
+ */
 export interface SensorData {
-    /** Acceleration along the X axis in m/s² */
-    accelX: number;
-    /** Acceleration along the Y axis in m/s² */
-    accelY: number;
-    /** Acceleration along the Z axis in m/s² */
-    accelZ: number;
-    /** Roll angle in degrees (-180 to 180) */
-    roll: number;
-    /** Pitch angle in degrees (-180 to 180) */
-    pitch: number;
-    /** Yaw angle in degrees (-180 to 180) */
-    yaw: number;
+    thumb: number;
+    index: number;
+    middle: number;
+    ring: number;
+    pinky: number;
 }
 
 /** User-adjustable calibration settings. */
@@ -21,12 +25,39 @@ export interface CalibrationConfig {
 }
 
 /** Available instrument identifiers. */
-export type InstrumentId = 'violin' | 'flute' | 'cello';
+export type InstrumentId = 'violin' | 'piano' | 'flute' | 'cello' | 'guitar';
+
+/** Sensor interpretation mode — derived from the selected instrument. */
+export type SensorMode = 'analog' | 'digital';
+
+/**
+ * Digital mode threshold: bend values above this are considered "on".
+ * Pre-configured and constant (matching the hardware buffer setting).
+ */
+export const SENSITIVITY_THRESHOLD = 0.3;
+
+/** Returns true if the instrument uses digital (threshold) mode. */
+export function isDigitalInstrument(id: InstrumentId): boolean {
+    return id === 'piano' || id === 'guitar';
+}
+
+/** Get the sensor mode for a given instrument. */
+export function getSensorMode(id: InstrumentId): SensorMode {
+    return isDigitalInstrument(id) ? 'digital' : 'analog';
+}
+
+/** Per-finger color palette used across UI components. */
+export const FINGER_COLORS: Record<FingerName, string> = {
+    thumb: '#f472b6',   // Pink 400
+    index: '#38bdf8',   // Sky 400
+    middle: '#4ade80',  // Green 400
+    ring: '#fbbf24',    // Amber 400
+    pinky: '#a78bfa',   // Violet 400
+};
 
 /**
  * Display-only parameters derived from sensor data.
  * Used by the SoundOutputDisplay component for visual feedback.
- * These mirror what the engine is doing internally.
  */
 export interface DisplayParams {
     /** Current note name, e.g. "C4", "G#3" */
@@ -35,24 +66,23 @@ export interface DisplayParams {
     frequency: number;
     /** Volume as 0–100% */
     volumePct: number;
-    /** Detune in cents */
-    detune: number;
     /** Pan position: -1 left, 0 center, +1 right */
     pan: number;
     /** Tremolo depth 0–100% */
     tremoloPct: number;
     /** Brightness 0–100% */
     brightnessPct: number;
+    /** Which fingers are currently "on" in digital mode */
+    activeFingers: boolean[];
 }
 
-/** Default sensor data — device at rest on a table. */
+/** Default sensor data — hand flat / no bend. */
 export const DEFAULT_SENSOR_DATA: SensorData = {
-    accelX: 0,
-    accelY: 0,
-    accelZ: 9.8,
-    roll: 0,
-    pitch: 0,
-    yaw: 0,
+    thumb: 0,
+    index: 0,
+    middle: 0,
+    ring: 0,
+    pinky: 0,
 };
 
 /** Default calibration. */

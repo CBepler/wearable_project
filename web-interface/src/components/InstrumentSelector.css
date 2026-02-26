@@ -81,3 +81,22 @@
     padding: 1px 6px;
     border-radius: var(--radius-sm);
 }
+
+.instrument-mode-hint {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    opacity: 0.6;
+}
+
+.active-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: var(--active-color);
+    border-radius: var(--radius-full);
+}
