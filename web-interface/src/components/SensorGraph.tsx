@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { Activity } from 'lucide-react';
 import type { SensorData } from '../audio/types';
-import { FINGER_NAMES, FINGER_COLORS } from '../audio/types';
+import { FINGER_NAMES, FINGER_COLORS, ORIENTATION_NAMES, ORIENTATION_COLORS } from '../audio/types';
 import './SensorGraph.css';
 
 const MAX_POINTS = 60;
@@ -14,6 +14,9 @@ interface DataPoint {
     middle: number;
     ring: number;
     pinky: number;
+    roll: number;
+    pitch: number;
+    yaw: number;
 }
 
 interface SensorGraphProps {
@@ -38,6 +41,9 @@ export function SensorGraph({ sensorData }: SensorGraphProps) {
                     middle: sensorData.middle,
                     ring: sensorData.ring,
                     pinky: sensorData.pinky,
+                    roll: (sensorData.roll + 180) / 360,
+                    pitch: (sensorData.pitch + 180) / 360,
+                    yaw: (sensorData.yaw + 180) / 360,
                 };
 
                 const next = [...prev, point];
@@ -53,7 +59,7 @@ export function SensorGraph({ sensorData }: SensorGraphProps) {
             <div className="card-header">
                 <div className="card-title">
                     <Activity size={20} className="text-primary" />
-                    <h3>Flex Sensor Data</h3>
+                    <h3>Sensor Data</h3>
                 </div>
                 <div className="card-actions">
                     <span className="live-badge">LIVE</span>
@@ -80,7 +86,14 @@ export function SensorGraph({ sensorData }: SensorGraphProps) {
                                 color: 'var(--color-text)',
                                 borderRadius: 'var(--radius-md)',
                             }}
-                            formatter={(value: number | undefined) => value != null ? `${(value * 100).toFixed(0)}%` : '—'}
+                            formatter={(value: number | undefined, name?: string) => {
+                                if (value == null) return '—';
+                                const orientationKeys = ['Roll', 'Pitch', 'Yaw'];
+                                if (name && orientationKeys.includes(name)) {
+                                    return `${Math.round(value * 360 - 180)}°`;
+                                }
+                                return `${(value * 100).toFixed(0)}%`;
+                            }}
                         />
                         {FINGER_NAMES.map((name) => (
                             <Line
@@ -94,6 +107,19 @@ export function SensorGraph({ sensorData }: SensorGraphProps) {
                                 activeDot={{ r: 5 }}
                             />
                         ))}
+                        {ORIENTATION_NAMES.map((name) => (
+                            <Line
+                                key={name}
+                                type="monotone"
+                                dataKey={name}
+                                name={name.charAt(0).toUpperCase() + name.slice(1)}
+                                stroke={ORIENTATION_COLORS[name]}
+                                strokeWidth={2}
+                                strokeDasharray="4 2"
+                                dot={false}
+                                activeDot={{ r: 5 }}
+                            />
+                        ))}
                     </LineChart>
                 </ResponsiveContainer>
             </div>
@@ -102,6 +128,12 @@ export function SensorGraph({ sensorData }: SensorGraphProps) {
                 {FINGER_NAMES.map((name) => (
                     <div className="legend-item" key={name}>
                         <span className="legend-color" style={{ backgroundColor: FINGER_COLORS[name] }} />
+                        <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
+                    </div>
+                ))}
+                {ORIENTATION_NAMES.map((name) => (
+                    <div className="legend-item" key={name}>
+                        <span className="legend-color" style={{ backgroundColor: ORIENTATION_COLORS[name] }} />
                         <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
                     </div>
                 ))}

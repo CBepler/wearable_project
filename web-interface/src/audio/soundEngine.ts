@@ -160,8 +160,8 @@ export class SoundEngine {
         const noteName = Tone.Frequency(midiNote, 'midi').toNote();
         inst.setNote(freq);
 
-        // 2. THUMB → Volume: more bend = louder
-        const normVol = clamp(data.thumb * cal.sensitivity * 2, 0, 1);
+        // 2. ROLL → Volume: roll -180..+180 mapped to 0..1
+        const normVol = clamp(mapRange(data.roll, -180, 180, 0, 1) * cal.sensitivity * 2, 0, 1);
         const volDb = mapRange(normVol, 0, 1, -36, -6);
         inst.setVolume(volDb);
 

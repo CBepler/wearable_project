@@ -2,6 +2,10 @@
 export const FINGER_NAMES = ['thumb', 'index', 'middle', 'ring', 'pinky'] as const;
 export type FingerName = (typeof FINGER_NAMES)[number];
 
+/** IMU orientation axis names. */
+export const ORIENTATION_NAMES = ['roll', 'pitch', 'yaw'] as const;
+export type OrientationName = (typeof ORIENTATION_NAMES)[number];
+
 /**
  * Raw flex-sensor readings from the wearable glove.
  * Each value is normalised 0.0 (flat / no bend) to 1.0 (fully bent).
@@ -16,6 +20,12 @@ export interface SensorData {
     middle: number;
     ring: number;
     pinky: number;
+    /** IMU roll in degrees (-180 to +180). */
+    roll: number;
+    /** IMU pitch in degrees (-180 to +180). */
+    pitch: number;
+    /** IMU yaw in degrees (-180 to +180). */
+    yaw: number;
 }
 
 /** User-adjustable calibration settings. */
@@ -55,6 +65,13 @@ export const FINGER_COLORS: Record<FingerName, string> = {
     pinky: '#a78bfa',   // Violet 400
 };
 
+/** Per-axis color palette for IMU orientation. */
+export const ORIENTATION_COLORS: Record<OrientationName, string> = {
+    roll: '#f97316',    // Orange 500
+    pitch: '#14b8a6',   // Teal 500
+    yaw: '#ec4899',     // Pink 500
+};
+
 /**
  * Display-only parameters derived from sensor data.
  * Used by the SoundOutputDisplay component for visual feedback.
@@ -76,13 +93,16 @@ export interface DisplayParams {
     activeFingers: boolean[];
 }
 
-/** Default sensor data — hand flat / no bend. */
+/** Default sensor data — hand flat / no bend, neutral orientation. */
 export const DEFAULT_SENSOR_DATA: SensorData = {
     thumb: 0,
     index: 0,
     middle: 0,
     ring: 0,
     pinky: 0,
+    roll: 0,
+    pitch: 0,
+    yaw: 0,
 };
 
 /** Default calibration. */

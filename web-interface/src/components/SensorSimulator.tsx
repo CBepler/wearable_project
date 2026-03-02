@@ -1,11 +1,18 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Hand, Play, Square, RotateCcw } from 'lucide-react';
-import type { SensorData, SensorMode, FingerName } from '../audio/types';
-import { DEFAULT_SENSOR_DATA, FINGER_NAMES, FINGER_COLORS, SENSITIVITY_THRESHOLD } from '../audio/types';
+import type { SensorData, SensorMode, FingerName, OrientationName } from '../audio/types';
+import { DEFAULT_SENSOR_DATA, FINGER_NAMES, FINGER_COLORS, SENSITIVITY_THRESHOLD, ORIENTATION_NAMES, ORIENTATION_COLORS } from '../audio/types';
 import './SensorSimulator.css';
 
 interface SliderConfig {
     key: FingerName;
+    label: string;
+    emoji: string;
+    color: string;
+}
+
+interface OrientationSliderConfig {
+    key: OrientationName;
     label: string;
     emoji: string;
     color: string;
@@ -16,6 +23,13 @@ const FINGER_SLIDERS: SliderConfig[] = FINGER_NAMES.map((name) => ({
     label: name.charAt(0).toUpperCase() + name.slice(1),
     emoji: { thumb: '👍', index: '👆', middle: '🖕', ring: '💍', pinky: '🤙' }[name],
     color: FINGER_COLORS[name],
+}));
+
+const ORIENTATION_SLIDERS: OrientationSliderConfig[] = ORIENTATION_NAMES.map((name) => ({
+    key: name,
+    label: name.charAt(0).toUpperCase() + name.slice(1),
+    emoji: { roll: '🔄', pitch: '↕️', yaw: '↔️' }[name],
+    color: ORIENTATION_COLORS[name],
 }));
 
 interface SensorSimulatorProps {
@@ -34,7 +48,7 @@ export function SensorSimulator({
     sensorMode,
 }: SensorSimulatorProps) {
     const handleSliderChange = useCallback(
-        (key: FingerName, value: number) => {
+        (key: FingerName | OrientationName, value: number) => {
             onSensorChange({ ...sensorData, [key]: value });
         },
         [sensorData, onSensorChange],
@@ -48,7 +62,7 @@ export function SensorSimulator({
 
     // rAF-throttled updates for smooth dragging
     const rafRef = useRef<number | null>(null);
-    const pendingUpdate = useRef<{ key: FingerName; value: number } | null>(null);
+    const pendingUpdate = useRef<{ key: FingerName | OrientationName; value: number } | null>(null);
 
     useEffect(() => {
         return () => {
@@ -57,7 +71,7 @@ export function SensorSimulator({
     }, []);
 
     const scheduleUpdate = useCallback(
-        (key: FingerName, value: number) => {
+        (key: FingerName | OrientationName, value: number) => {
             pendingUpdate.current = { key, value };
             if (rafRef.current === null) {
                 rafRef.current = requestAnimationFrame(() => {
@@ -121,6 +135,45 @@ export function SensorSimulator({
         );
     };
 
+    const renderOrientationSlider = (cfg: OrientationSliderConfig) => {
+        const value = sensorData[cfg.key];
+        const pct = ((value + 180) / 360) * 100;
+
+        return (
+            <div
+                className={`sim-slider-row ${hoveredSlider === cfg.key ? 'hovered' : ''}`}
+                key={cfg.key}
+                onMouseEnter={() => setHoveredSlider(cfg.key)}
+                onMouseLeave={() => setHoveredSlider(null)}
+            >
+                <label className="sim-slider-label" style={{ color: cfg.color }}>
+                    <span className="sim-finger-emoji">{cfg.emoji}</span>
+                    {cfg.label}
+                </label>
+                <div className="sim-slider-track-wrap">
+                    <input
+                        type="range"
+                        min={-180}
+                        max={180}
+                        step={1}
+                        value={value}
+                        onChange={(e) => scheduleUpdate(cfg.key, Number(e.target.value))}
+                        className="sim-range-slider"
+                        style={{
+                            backgroundSize: `${pct}% 100%`,
+                            '--slider-color': cfg.color,
+                        } as React.CSSProperties}
+                    />
+                </div>
+                <div className="sim-value-area">
+                    <span className="sim-value-badge" style={{ borderColor: cfg.color, color: cfg.color }}>
+                        {value}°
+                    </span>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="card sim-card">
             <div className="card-header">
@@ -150,6 +203,10 @@ export function SensorSimulator({
                 <div className="sim-group">
                     <h4 className="sim-group-title">Finger Bend</h4>
                     {FINGER_SLIDERS.map(renderSlider)}
+                </div>
+                <div className="sim-group">
+                    <h4 className="sim-group-title">Orientation</h4>
+                    {ORIENTATION_SLIDERS.map(renderOrientationSlider)}
                 </div>
             </div>
         </div>
