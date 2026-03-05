@@ -1,5 +1,1 @@
-# wearable_project
-
-Initial Prompt:
-
-"Please setup a website using vite + typescript + react + eslint. The web application is for a simple wearable instrument that will be situated on the wrist. The website will need to take in sensor data from the wearable instrument (ex. rotation, position, etc) and generate sound from that data. The specifics about that and sound generation have not been determined yet, so please do NOT implement any of that yet. Currently, focus on setting up a ui that will eventually display the sensor data in graphs, allow the use to calibrate the device (ex. master volume sensitivity (if volume is determined by the distance moved this scale will determine dB per unit of distance)), instrument selection (ex. guitar, piano, etc) (this will determine the sound that is generated). Give the website a modern, minimalistic, and responsive design."
+# Wearable Project
