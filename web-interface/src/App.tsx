@@ -6,6 +6,7 @@ import { LiveMonitorPage } from './components/LiveMonitorPage';
 import type { SensorData, InstrumentId } from './audio/types';
 import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION, getSensorMode } from './audio/types';
 import { SoundEngine } from './audio/soundEngine';
+import { useLiveSensor } from './hooks/useLiveSensor';
 import './App.css';
 
 function App() {
@@ -13,9 +14,18 @@ function App() {
   const [activePage, setActivePage] = useState<PageId>('monitor');
 
   // ── Shared state ──────────────────────────────────────────────────────
-  const [sensorData, setSensorData] = useState<SensorData>(DEFAULT_SENSOR_DATA);
+  const [simSensorData, setSimSensorData] = useState<SensorData>(DEFAULT_SENSOR_DATA);
   const [isPlaying, setIsPlaying] = useState(false);
   const [instrumentId, setInstrumentId] = useState<InstrumentId>('violin');
+  const [liveEnabled, setLiveEnabled] = useState(false);
+
+  // Live sensor data from the FastAPI WebSocket bridge
+  const { sensorData: liveSensorData, status: liveStatus } = useLiveSensor(liveEnabled);
+
+  // Use live data on monitor page when connected, simulator data otherwise
+  const sensorData = (activePage === 'monitor' && liveEnabled)
+    ? liveSensorData
+    : simSensorData;
 
   // Sensor mode is derived from instrument
   const sensorMode = getSensorMode(instrumentId);
@@ -74,12 +84,16 @@ function App() {
           sensorMode={sensorMode}
           instrumentId={instrumentId}
           onInstrumentChange={handleInstrumentChange}
+          onTogglePlay={handleTogglePlay}
           displayParams={displayParams}
+          liveEnabled={liveEnabled}
+          onToggleLive={() => setLiveEnabled(prev => !prev)}
+          liveStatus={liveStatus}
         />
       ) : (
         <SimulatorPage
-          sensorData={sensorData}
-          onSensorChange={setSensorData}
+          sensorData={simSensorData}
+          onSensorChange={setSimSensorData}
           isPlaying={isPlaying}
           onTogglePlay={handleTogglePlay}
           sensorMode={sensorMode}

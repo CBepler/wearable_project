@@ -1,4 +1,5 @@
 import type { SensorData, InstrumentId, SensorMode, DisplayParams } from '../audio/types';
+import type { ConnectionStatus } from '../hooks/useLiveSensor';
 import { SensorGraph } from './SensorGraph';
 import { InstrumentSelector } from './InstrumentSelector';
 import { SoundOutputDisplay } from './SoundOutputDisplay';
@@ -10,8 +11,24 @@ interface LiveMonitorPageProps {
     sensorMode: SensorMode;
     instrumentId: InstrumentId;
     onInstrumentChange: (id: InstrumentId) => void;
+    onTogglePlay: () => void;
     displayParams: DisplayParams | undefined;
+    liveEnabled: boolean;
+    onToggleLive: () => void;
+    liveStatus: ConnectionStatus;
 }
+
+const STATUS_LABEL: Record<ConnectionStatus, string> = {
+    disconnected: 'Disconnected',
+    connecting: 'Connecting…',
+    connected: 'Live',
+};
+
+const STATUS_COLOR: Record<ConnectionStatus, string> = {
+    disconnected: '#94a3b8',
+    connecting: '#fbbf24',
+    connected: '#4ade80',
+};
 
 export function LiveMonitorPage({
     sensorData,
@@ -19,11 +36,33 @@ export function LiveMonitorPage({
     sensorMode,
     instrumentId,
     onInstrumentChange,
+    onTogglePlay,
     displayParams,
+    liveEnabled,
+    onToggleLive,
+    liveStatus,
 }: LiveMonitorPageProps) {
     return (
         <div className="live-monitor-page">
             <div className="monitor-main">
+                <div className="live-controls">
+                    <button
+                        className={`live-toggle-btn ${liveEnabled ? 'active' : ''}`}
+                        onClick={onToggleLive}
+                    >
+                        <span
+                            className="status-dot"
+                            style={{ backgroundColor: STATUS_COLOR[liveStatus] }}
+                        />
+                        {liveEnabled ? STATUS_LABEL[liveStatus] : 'Connect Hardware'}
+                    </button>
+                    <button
+                        className={`play-btn ${isPlaying ? 'playing' : ''}`}
+                        onClick={onTogglePlay}
+                    >
+                        {isPlaying ? 'Stop' : 'Play'}
+                    </button>
+                </div>
                 <SensorGraph sensorData={sensorData} />
                 <SoundOutputDisplay params={displayParams} isPlaying={isPlaying} sensorMode={sensorMode} />
             </div>

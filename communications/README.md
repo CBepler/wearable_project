@@ -114,6 +114,39 @@ Press `Ctrl+C` to disconnect.
 
 ---
 
+## Running the Full Stack (Hardware → Web UI)
+
+The system uses a FastAPI WebSocket bridge to stream live BLE data into the browser.
+
+### 1. Start the FastAPI server
+
+```bash
+cd communications
+pip install -r requirements.txt
+uvicorn server:app --host 0.0.0.0 --port 8000
+```
+
+### 2. Start the BLE receiver (in a second terminal)
+
+```bash
+cd communications
+python receiver.py
+```
+
+The receiver will scan for the `HandMusic` device, connect, and forward every sensor packet to the FastAPI server via HTTP POST. It also continues to print data to the console.
+
+### 3. Start the web interface (in a third terminal)
+
+```bash
+cd web-interface
+npm install
+npm run dev
+```
+
+Open the URL shown by Vite (usually `http://localhost:5173`). On the **Live Monitor** page, click **Connect Hardware** to open a WebSocket to the server and begin streaming real-time sensor data.
+
+---
+
 ## Data Format
 
 Each packet is a newline-terminated CSV string sent at **50 Hz**:
