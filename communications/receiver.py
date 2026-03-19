@@ -2,17 +2,15 @@
 Hand Music Project — BLE Receiver
 Receives complementary filter output + flex sensor data from the XIAO nRF52840 Sense.
 
-CURRENT PACKET FORMAT (flex sensors not yet installed):
-    "ROLL,PITCH,YAW,ACCEL_MAG\n"
-
-PACKET FORMAT once flex sensors are enabled:
-    "ROLL,PITCH,YAW,ACCEL_MAG,R0,R1,R2,R3,R4\n"
+PACKET FORMAT:
+    "ROLL,PITCH,YAW,ACCEL_MAG,R0,...,Rn\n"
 
     ROLL/PITCH/YAW  — degrees (complementary filter output)
     ACCEL_MAG       — total acceleration magnitude (m/s²)
     R0–R4           — flex resistance in Ohms, thumb → pinky
+                      only as many R fields as NUM_FLEX in the firmware
 
-To enable flex sensor parsing: set FLEX_ENABLED = True below.
+Set NUM_FLEX below to match the value in the firmware (currently 1).
 
 REQUIREMENTS:
     pip install -r requirements.txt
@@ -28,43 +26,38 @@ from bleak import BleakScanner, BleakClient
 DEVICE_NAME    = "HandMusic"
 NUS_TX_CHAR    = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
-PRINT_INTERVAL = 0.1    # seconds between printed lines — increase to slow output
-FLEX_ENABLED   = False  # set True once flex sensors are wired and firmware updated
+# Must match NUM_FLEX in the firmware — increase as you install more sensors
+NUM_FLEX       = 1
+
+PRINT_INTERVAL = 0.1   # seconds between printed lines
+FINGER_NAMES   = ["Thumb", "Index", "Middle", "Ring", "Pinky"]
 
 _buffer        = ""
 _last_print    = 0.0
 
-FINGER_NAMES   = ["Thumb", "Index", "Middle", "Ring", "Pinky"]
-
 
 def parse_and_print(line: str):
     parts = line.split(",")
+    expected = 4 + NUM_FLEX
+    if len(parts) != expected:
+        print(f"Malformed packet (expected {expected} fields, got {len(parts)}): {line}")
+        return
 
-    if not FLEX_ENABLED:
-        # Expecting: ROLL, PITCH, YAW, ACCEL_MAG
-        if len(parts) != 4:
-            print(f"Malformed packet (expected 4 fields): {line}")
-            return
-        roll, pitch, yaw, accel_mag = [float(p) for p in parts]
-        print(
-            f"Roll:{roll:8.2f}°  Pitch:{pitch:8.2f}°  Yaw:{yaw:8.2f}°  "
-            f"|Accel|:{accel_mag:6.2f} m/s²"
-        )
+    roll      = float(parts[0])
+    pitch     = float(parts[1])
+    yaw       = float(parts[2])
+    accel_mag = float(parts[3])
+    flex      = [float(parts[4 + i]) for i in range(NUM_FLEX)]
 
-    else:
-        # Expecting: ROLL, PITCH, YAW, ACCEL_MAG, R0, R1, R2, R3, R4
-        if len(parts) != 9:
-            print(f"Malformed packet (expected 9 fields): {line}")
-            return
-        roll, pitch, yaw, accel_mag = [float(p) for p in parts[:4]]
-        flex = [float(p) for p in parts[4:]]
-        flex_str = "  ".join(
-            f"{FINGER_NAMES[i]}:{flex[i]:>7.0f}Ω" for i in range(5)
-        )
-        print(
-            f"Roll:{roll:8.2f}°  Pitch:{pitch:8.2f}°  Yaw:{yaw:8.2f}°  "
-            f"|Accel|:{accel_mag:6.2f} m/s²  |  {flex_str}"
-        )
+    flex_str = "  ".join(
+        f"{FINGER_NAMES[i]}:{flex[i]:>7.0f}Ω" for i in range(NUM_FLEX)
+    )
+
+    print(
+        f"Roll:{roll:8.2f}°  Pitch:{pitch:8.2f}°  Yaw:{yaw:8.2f}°  "
+        f"|Accel|:{accel_mag:6.2f} m/s²"
+        + (f"  |  {flex_str}" if NUM_FLEX > 0 else "")
+    )
 
 
 def on_notification(sender, data: bytearray):

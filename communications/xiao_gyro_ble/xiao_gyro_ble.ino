@@ -13,25 +13,25 @@
 //    alpha = 0.98 means 98% gyro, 2% accel correction each sample.
 //
 //  PACKET FORMAT (CSV, newline-terminated):
-//    "ROLL,PITCH,YAW,ACCEL_MAG\n"            <- flex sensors commented out
-//    "ROLL,PITCH,YAW,ACCEL_MAG,R0,R1,R2,R3,R4\n"  <- when flex sensors enabled
+//    "ROLL,PITCH,YAW,ACCEL_MAG,R0\n"               <- 1 flex sensor active
+//    "ROLL,PITCH,YAW,ACCEL_MAG,R0,R1,R2,R3,R4\n"  <- all 5 flex sensors active
 //
 //    ROLL/PITCH/YAW  — degrees
 //    ACCEL_MAG       — total acceleration magnitude (m/s²)
-//    R0–R4           — flex resistance in Ohms, thumb → pinky (commented out)
+//    R0–R4           — flex resistance in Ohms, thumb → pinky
 //
-//  ── FLEX SENSOR WIRING (for when you're ready) ──────────────
-//    3.3V ──── [Flex Sensor] ──── signal ──── [10kΩ] ──── GND
+//  ── FLEX SENSOR WIRING ───────────────────────────────────────
+//    3.3V ──── [Flex Sensor] ──── signal ──── [47kΩ] ──── GND
 //
-//    Finger   Pin
-//    ──────   ───
-//    Thumb    A0
-//    Index    A1
-//    Middle   A2
-//    Ring     A3
-//    Pinky    A4
+//    Finger   Pin    Status
+//    ──────   ───    ──────
+//    Thumb    A0     INSTALLED
+//    Index    A1     not yet installed
+//    Middle   A2     not yet installed
+//    Ring     A3     not yet installed
+//    Pinky    A4     not yet installed
 //
-//  To enable flex sensors: uncomment all lines marked FLEX
+//  To add more flex sensors: wire them up and increase NUM_FLEX
 //
 //  LED: Red blinks = advertising, Green solid = connected.
 // ============================================================
@@ -54,11 +54,14 @@ float roll  = 0.0f;
 float pitch = 0.0f;
 float yaw   = 0.0f;
 
-// ── Flex sensors (COMMENTED OUT — uncomment when installed) ──
-// const int   FLEX_PINS[5] = { A0, A1, A2, A3, A4 };  // FLEX
-// const float R_FIXED = 47000.0f;  // 47kΩ fixed resistor
-// const float V_SUPPLY     = 3.3f;                      // FLEX
-// const float ADC_MAX      = 4095.0f;                   // FLEX
+// ── Flex sensors ─────────────────────────────────────────────
+// NUM_FLEX controls how many are read and transmitted.
+// Increase from 1 to 2, 3, 4, 5 as you install each sensor.
+const int   NUM_FLEX         = 1;
+const int   FLEX_PINS[5]     = { A0, A1, A2, A3, A4 };
+const float R_FIXED          = 47000.0f;  // 47kΩ fixed resistor
+const float V_SUPPLY         = 3.3f;
+const float ADC_MAX          = 4095.0f;   // 12-bit ADC
 
 // ── BLE Nordic UART Service ───────────────────────────────────
 BLEService uartService("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
@@ -84,8 +87,8 @@ void updateFilter(float gx, float gy, float gz,
 
   // Derive roll and pitch from accelerometer
   // atan2 gives angle in radians — convert to degrees
-  float accel_roll  = atan2(ay, az)              * 180.0f / M_PI;
-  float accel_pitch = atan2(-ax, sqrt(ay*ay + az*az)) * 180.0f / M_PI;
+  float accel_roll  = atan2(ay, az)                    * 180.0f / M_PI;
+  float accel_pitch = atan2(-ax, sqrt(ay*ay + az*az))  * 180.0f / M_PI;
 
   // Fuse: trust gyro for fast motion, nudge toward accel for slow drift
   roll  = ALPHA * gyro_roll  + (1.0f - ALPHA) * accel_roll;
@@ -94,21 +97,21 @@ void updateFilter(float gx, float gy, float gz,
   // Yaw: gyro only — no absolute reference without a magnetometer
   yaw = gyro_yaw;
 
-  // Keep yaw in [-180, 180] range to avoid unbounded growth
+  // Keep yaw in [-180, 180] to avoid unbounded growth
   if (yaw >  180.0f) yaw -= 360.0f;
   if (yaw < -180.0f) yaw += 360.0f;
 }
 
 
 // ════════════════════════════════════════════════════════════
-//  Flex sensor resistance from ADC reading  (COMMENTED OUT)
+//  Flex sensor resistance from ADC reading
 // ════════════════════════════════════════════════════════════
-// float readFlexResistance(int pin) {                         // FLEX
-//   int raw    = analogRead(pin);                             // FLEX
-//   float vOut = raw * V_SUPPLY / ADC_MAX;                   // FLEX
-//   if (vOut < 0.001f) return 999999.0f;                     // FLEX
-//   return R_FIXED * (V_SUPPLY - vOut) / vOut;               // FLEX
-// }                                                           // FLEX
+float readFlexResistance(int pin) {
+  int raw    = analogRead(pin);
+  float vOut = raw * V_SUPPLY / ADC_MAX;
+  if (vOut < 0.001f) return 999999.0f;  // avoid divide-by-zero
+  return R_FIXED * (V_SUPPLY - vOut) / vOut;
+}
 
 
 // ════════════════════════════════════════════════════════════
@@ -122,10 +125,9 @@ void setup() {
   digitalWrite(LED_RED,   HIGH);
   digitalWrite(LED_GREEN, HIGH);
 
-  // FLEX: uncomment when flex sensors are wired up
-  // for (int i = 0; i < 5; i++) {           // FLEX
-  //   pinMode(FLEX_PINS[i], INPUT);          // FLEX
-  // }                                        // FLEX
+  for (int i = 0; i < NUM_FLEX; i++) {
+    pinMode(FLEX_PINS[i], INPUT);
+  }
 
   if (imu.begin() != 0) {
     Serial.println("IMU init failed!");
@@ -180,25 +182,21 @@ void loop() {
       // Acceleration magnitude — useful for detecting gesture intensity
       float accelMag = sqrt(ax*ax + ay*ay + az*az);
 
-      // ── Flex sensors (COMMENTED OUT) ────────────────────
-      // float r[5];                                          // FLEX
-      // for (int i = 0; i < 5; i++) {                       // FLEX
-      //   r[i] = readFlexResistance(FLEX_PINS[i]);          // FLEX
-      // }                                                    // FLEX
+      // Read however many flex sensors are currently installed
+      float r[5] = {0};
+      for (int i = 0; i < NUM_FLEX; i++) {
+        r[i] = readFlexResistance(FLEX_PINS[i]);
+      }
 
-      // Format packet — swap to the flex version when ready
+      // Build packet: IMU fields first, then NUM_FLEX resistance values
       char packet[128];
-
-      // Current format (no flex):
-      snprintf(packet, sizeof(packet),
-               "%.2f,%.2f,%.2f,%.2f\n",
-               roll, pitch, yaw, accelMag);
-
-      // FLEX: replace the snprintf above with this when flex sensors are installed:
-      // snprintf(packet, sizeof(packet),                                              // FLEX
-      //          "%.2f,%.2f,%.2f,%.2f,%.0f,%.0f,%.0f,%.0f,%.0f\n",                 // FLEX
-      //          roll, pitch, yaw, accelMag,                                         // FLEX
-      //          r[0], r[1], r[2], r[3], r[4]);                                      // FLEX
+      int len = snprintf(packet, sizeof(packet),
+                         "%.2f,%.2f,%.2f,%.2f",
+                         roll, pitch, yaw, accelMag);
+      for (int i = 0; i < NUM_FLEX; i++) {
+        len += snprintf(packet + len, sizeof(packet) - len, ",%.0f", r[i]);
+      }
+      snprintf(packet + len, sizeof(packet) - len, "\n");
 
       txChar.writeValue(String(packet));
       Serial.print(packet);
