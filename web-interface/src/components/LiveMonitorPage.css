@@ -23,6 +23,51 @@
     min-height: 0;
 }
 
+/* ─── Live connection controls ─────────────────────────────────────────── */
+
+.live-controls {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.live-toggle-btn,
+.play-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-border, #334155);
+    border-radius: 0.5rem;
+    background: var(--color-surface, #1e293b);
+    color: var(--color-text, #e2e8f0);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.live-toggle-btn:hover,
+.play-btn:hover {
+    background: var(--color-surface-hover, #334155);
+}
+
+.live-toggle-btn.active {
+    border-color: #4ade80;
+}
+
+.play-btn.playing {
+    border-color: #f87171;
+    color: #f87171;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
 @media (max-width: 900px) {
     .live-monitor-page {
         grid-template-columns: 1fr;
