@@ -56,7 +56,7 @@ float yaw   = 0.0f;
 
 // ── Flex sensors (COMMENTED OUT — uncomment when installed) ──
 // const int   FLEX_PINS[5] = { A0, A1, A2, A3, A4 };  // FLEX
-// const float R_FIXED      = 10000.0f;                  // FLEX
+// const float R_FIXED = 47000.0f;  // 47kΩ fixed resistor
 // const float V_SUPPLY     = 3.3f;                      // FLEX
 // const float ADC_MAX      = 4095.0f;                   // FLEX
 
