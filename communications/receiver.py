@@ -1,16 +1,20 @@
 """
 Hand Music Project — BLE Receiver
-Receives complementary filter output + flex sensor data from the XIAO nRF52840 Sense.
+Receives complementary filter output + flex sensor data from the XIAO nRF52840 Sense
+and forwards each packet to a FastAPI server for the web app.
 
 PACKET FORMAT:
     "ROLL,PITCH,YAW,ACCEL_MAG,R0,...,Rn\n"
 
     ROLL/PITCH/YAW  — degrees (complementary filter output)
     ACCEL_MAG       — total acceleration magnitude (m/s²)
-    R0–R4           — flex resistance in Ohms, thumb → pinky
+    R0–Rn           — flex resistance in Ohms, thumb → pinky
                       only as many R fields as NUM_FLEX in the firmware
 
-Set NUM_FLEX below to match the value in the firmware (currently 1).
+CONFIGURATION:
+    NUM_FLEX    — must match NUM_FLEX in the firmware (currently 1)
+    SERVER_URL  — FastAPI bridge endpoint (set by teammate)
+    PRINT_INTERVAL — seconds between printed lines (increase to slow output)
 
 REQUIREMENTS:
     pip install -r requirements.txt
@@ -24,75 +28,79 @@ import time
 from bleak import BleakScanner, BleakClient
 import httpx
 
+# ── BLE ──────────────────────────────────────────────────────
 DEVICE_NAME    = "HandMusic"
 NUS_TX_CHAR    = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
-SERVER_URL     = "http://localhost:8000/sensor"   # FastAPI bridge endpoint
+# ── Flex sensors ─────────────────────────────────────────────
 # Must match NUM_FLEX in the firmware — increase as you install more sensors
 NUM_FLEX       = 1
-
-PRINT_INTERVAL = 0.1   # seconds between printed lines
 FINGER_NAMES   = ["Thumb", "Index", "Middle", "Ring", "Pinky"]
 
+# Normalisation constants — map raw resistance (Ω) to 0.0–1.0
+# Adjust FLEX_R_FLAT and FLEX_R_BENT to match your sensors after calibration
+FLEX_R_FLAT    = 47_000    # ~47 kΩ when finger is straight
+FLEX_R_BENT    = 125_000   # ~125 kΩ when finger is fully bent
+
+# ── Server ───────────────────────────────────────────────────
+SERVER_URL     = "http://localhost:8000/sensor"
+
+# ── Display ──────────────────────────────────────────────────
+PRINT_INTERVAL = 0.1   # seconds between printed lines
+
+# ── Internal state ────────────────────────────────────────────
 _buffer        = ""
 _last_print    = 0.0
 _http_client: httpx.AsyncClient | None = None
 
-# Normalisation constants for flex sensors (resistance in Ohms)
-FLEX_R_FLAT = 10_000    # ~10 kΩ when flat
-FLEX_R_BENT = 125_000   # ~125 kΩ when fully bent
-
 
 def _normalize_flex(resistance: float) -> float:
-    """Map raw flex resistance (Ω) to 0.0–1.0 range."""
+    """Map raw flex resistance (Ω) to 0.0 (flat) – 1.0 (fully bent)."""
     clamped = max(FLEX_R_FLAT, min(FLEX_R_BENT, resistance))
     return (clamped - FLEX_R_FLAT) / (FLEX_R_BENT - FLEX_R_FLAT)
 
 
 def parse_line(line: str) -> dict | None:
-    """Parse a CSV BLE line into a sensor dict, or None on error."""
+    """Parse a CSV BLE packet into a sensor dict, or None on error."""
     parts = line.split(",")
+    expected = 4 + NUM_FLEX
+    if len(parts) != expected:
+        print(f"Malformed packet (expected {expected} fields, got {len(parts)}): {line}")
+        return None
 
-    if not FLEX_ENABLED:
-        if len(parts) != 4:
-            print(f"Malformed packet (expected 4 fields): {line}")
-            return None
-        roll, pitch, yaw, accel_mag = (float(p) for p in parts)
-        return {
-            "roll": roll, "pitch": pitch, "yaw": yaw,
-            "accel_mag": accel_mag,
-            "thumb": 0.0, "index": 0.0, "middle": 0.0,
-            "ring": 0.0, "pinky": 0.0,
-        }
-    else:
-        if len(parts) != 9:
-            print(f"Malformed packet (expected 9 fields): {line}")
-            return None
-        roll, pitch, yaw, accel_mag = (float(p) for p in parts[:4])
-        flex_raw = [float(p) for p in parts[4:]]
-        flex_norm = [_normalize_flex(r) for r in flex_raw]
-        names = ["thumb", "index", "middle", "ring", "pinky"]
-        packet = {
-            "roll": roll, "pitch": pitch, "yaw": yaw,
-            "accel_mag": accel_mag,
-        }
-        for name, val in zip(names, flex_norm):
-            packet[name] = val
-        return packet
+    roll      = float(parts[0])
+    pitch     = float(parts[1])
+    yaw       = float(parts[2])
+    accel_mag = float(parts[3])
+
+    # Parse and normalise however many flex sensors are active
+    flex_raw  = [float(parts[4 + i]) for i in range(NUM_FLEX)]
+    flex_norm = [_normalize_flex(r) for r in flex_raw]
+
+    packet = {
+        "roll": roll, "pitch": pitch, "yaw": yaw,
+        "accel_mag": accel_mag,
+    }
+    # Always include all 5 finger keys — uninstalled sensors default to 0.0
+    for i, name in enumerate(["thumb", "index", "middle", "ring", "pinky"]):
+        packet[name] = flex_norm[i] if i < NUM_FLEX else 0.0
+
+    return packet
 
 
 def _print_packet(packet: dict):
     """Pretty-print a parsed sensor packet to the console."""
-    roll, pitch, yaw = packet["roll"], packet["pitch"], packet["yaw"]
-    accel = packet["accel_mag"]
     base = (
-        f"Roll:{roll:8.2f}°  Pitch:{pitch:8.2f}°  Yaw:{yaw:8.2f}°  "
-        f"|Accel|:{accel:6.2f} m/s²"
+        f"Roll:{packet['roll']:8.2f}°  "
+        f"Pitch:{packet['pitch']:8.2f}°  "
+        f"Yaw:{packet['yaw']:8.2f}°  "
+        f"|Accel|:{packet['accel_mag']:6.2f} m/s²"
     )
-    if FLEX_ENABLED:
+    if NUM_FLEX > 0:
         flex_str = "  ".join(
             f"{FINGER_NAMES[i]}:{packet[n]:>5.2f}"
             for i, n in enumerate(["thumb", "index", "middle", "ring", "pinky"])
+            if i < NUM_FLEX
         )
         print(f"{base}  |  {flex_str}")
     else:
