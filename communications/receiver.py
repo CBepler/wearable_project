@@ -39,8 +39,8 @@ FINGER_NAMES   = ["Thumb", "Index", "Middle", "Ring", "Pinky"]
 
 # Normalisation constants — map raw resistance (Ω) to 0.0–1.0
 # Adjust FLEX_R_FLAT and FLEX_R_BENT to match your sensors after calibration
-FLEX_R_FLAT    = 47_000    # ~47 kΩ when finger is straight
-FLEX_R_BENT    = 125_000   # ~125 kΩ when finger is fully bent
+FLEX_R_FLAT    = 37_600    # ~47 kΩ when finger is straight
+FLEX_R_BENT    = 272_000 #125_000   # ~125 kΩ when finger is fully bent
 
 # ── Server ───────────────────────────────────────────────────
 SERVER_URL     = "http://localhost:8000/sensor"
