@@ -162,7 +162,7 @@ export class SoundEngine {
 
         // 2. ROLL → Volume: roll -180..+180 mapped to 0..1
         const normVol = clamp(mapRange(data.roll, -180, 180, 0, 1) * cal.sensitivity * 2, 0, 1);
-        const volDb = mapRange(normVol, 0, 1, -36, -6);
+        const volDb = mapRange(normVol, 0, 1, -6, 6);
         inst.setVolume(volDb);
 
         // 3. MIDDLE → Brightness / timbre
