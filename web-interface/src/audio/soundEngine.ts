@@ -200,11 +200,13 @@ export class SoundEngine {
     private updateDigital(data: SensorData, _cal: CalibrationConfig): void {
         const inst = this.instrument!;
         const fingerValues = [data.thumb, data.index, data.middle, data.ring, data.pinky];
+        // Only check fingers that have sensors installed (currently just thumb)
+        const installedFingers = new Set([0]); // 0 = thumb
         const activeFingers: boolean[] = [];
         let activeNote = '—';
 
         for (let i = 0; i < 5; i++) {
-            const isOn = fingerValues[i] >= SENSITIVITY_THRESHOLD;
+            const isOn = installedFingers.has(i) && fingerValues[i] <= 0.8;
             activeFingers.push(isOn);
 
             if (isOn && !this.fingerState[i]) {
