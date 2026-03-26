@@ -197,13 +197,18 @@ export class SoundEngine {
 
     // ── Digital mode (piano / discrete-note instruments) ─────────────────────
 
-    private updateDigital(data: SensorData, _cal: CalibrationConfig): void {
+    private updateDigital(data: SensorData, cal: CalibrationConfig): void {
         const inst = this.instrument!;
         const fingerValues = [data.thumb, data.index, data.middle, data.ring, data.pinky];
         // Only check fingers that have sensors installed (currently just thumb)
         const installedFingers = new Set([0]); // 0 = thumb
         const activeFingers: boolean[] = [];
         let activeNote = '—';
+
+        // ROLL → Volume (same mapping as analog mode)
+        const normVol = clamp(mapRange(data.roll, -180, 180, 0, 1) * cal.sensitivity * 2, 0, 1);
+        const volDb = mapRange(normVol, 0, 1, -36, 12);
+        inst.setVolume(volDb);
 
         for (let i = 0; i < 5; i++) {
             const isOn = installedFingers.has(i) && fingerValues[i] <= 0.8;
@@ -226,7 +231,7 @@ export class SoundEngine {
         this._lastDisplay = {
             note: activeCount > 0 ? activeNote : '—',
             frequency: activeCount > 0 ? Math.round(Tone.Frequency(activeNote).toFrequency()) : 0,
-            volumePct: activeCount > 0 ? 80 : 0,
+            volumePct: Math.round(normVol * 100),
             pan: 0,
             tremoloPct: 0,
             brightnessPct: 0,

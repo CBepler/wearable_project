@@ -107,6 +107,21 @@ export function SoundOutputDisplay({ params, isPlaying, sensorMode }: SoundOutpu
                         <span className="digital-note-label">Active Note</span>
                         <span className="digital-note-value">{p.note}</span>
                     </div>
+                    <div className="meter">
+                        <div className="meter-header">
+                            <span className="meter-label">Volume</span>
+                            <span className="meter-value" style={{ color: 'var(--color-success)' }}>{p.volumePct}%</span>
+                        </div>
+                        <div className="meter-bar-bg">
+                            <div
+                                className={`meter-bar-fill ${isPlaying ? 'animate' : ''}`}
+                                style={{
+                                    width: `${Math.min(100, Math.max(0, p.volumePct))}%`,
+                                    backgroundColor: 'var(--color-success)',
+                                }}
+                            />
+                        </div>
+                    </div>
                     <div className="finger-keys">
                         <Hand size={18} className="text-muted" />
                         {FINGER_NAMES.map((name, i) => (
