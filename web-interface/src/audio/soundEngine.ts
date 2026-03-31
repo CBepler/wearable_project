@@ -140,6 +140,22 @@ export class SoundEngine {
 
     updateFromSensors(data: SensorData, cal: CalibrationConfig, keybinds: KeybindConfig = DEFAULT_KEYBIND_CONFIG): void {
         if (!this._isPlaying || !this.instrument) return;
+
+        // If digital keybinds changed, release active fingers using the OLD notes
+        // then reset state so new notes can trigger immediately
+        if (isDigitalInstrument(this._instrumentId) && this._lastKeybinds.digital !== keybinds.digital) {
+            const oldBinds = this._lastKeybinds.digital;
+            for (let i = 0; i < 5; i++) {
+                if (this.fingerState[i]) {
+                    const oldNotes = oldBinds[FINGER_NAMES[i]];
+                    for (const note of oldNotes) {
+                        this.instrument.releaseNote?.(note);
+                    }
+                    this.fingerState[i] = false;
+                }
+            }
+        }
+
         this._lastKeybinds = keybinds;
 
         if (isDigitalInstrument(this._instrumentId)) {

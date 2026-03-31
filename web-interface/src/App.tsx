@@ -3,7 +3,7 @@ import { Layout } from './components/Layout';
 import type { PageId } from './components/Layout';
 import { SimulatorPage } from './components/SimulatorPage';
 import { LiveMonitorPage } from './components/LiveMonitorPage';
-import type { SensorData, InstrumentId, KeybindConfig, CalibrationConfig } from './audio/types';
+import type { SensorData, InstrumentId, KeybindConfig, CalibrationConfig, DisplayParams } from './audio/types';
 import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION, DEFAULT_KEYBIND_CONFIG, getSensorMode } from './audio/types';
 import { SoundEngine } from './audio/soundEngine';
 import { useLiveSensor } from './hooks/useLiveSensor';
@@ -38,10 +38,13 @@ function App() {
     engineRef.current = new SoundEngine();
   }
 
+  const [displayParams, setDisplayParams] = useState<DisplayParams | undefined>(undefined);
+
   // Push sensor data to engine
   useEffect(() => {
     if (isPlaying) {
       engineRef.current?.updateFromSensors(sensorData, calibration, keybindConfig);
+      setDisplayParams(engineRef.current?.displayParams);
     }
   }, [sensorData, isPlaying, keybindConfig, calibration]);
 
@@ -60,13 +63,14 @@ function App() {
         setIsPlaying(false);
       } else {
         await engine.start();
-        engine.updateFromSensors(sensorData, DEFAULT_CALIBRATION, keybindConfig);
+        engine.updateFromSensors(sensorData, calibration, keybindConfig);
+        setDisplayParams(engine.displayParams);
         setIsPlaying(true);
       }
     } catch (err) {
       console.error('[SoundEngine] Play/Stop error:', err);
     }
-  }, [sensorData]);
+  }, [sensorData, calibration, keybindConfig]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -74,8 +78,6 @@ function App() {
       engineRef.current?.stop();
     };
   }, []);
-
-  const displayParams = engineRef.current?.displayParams;
 
   return (
     <Layout activePage={activePage} onPageChange={setActivePage}>
