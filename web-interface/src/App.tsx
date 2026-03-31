@@ -3,7 +3,7 @@ import { Layout } from './components/Layout';
 import type { PageId } from './components/Layout';
 import { SimulatorPage } from './components/SimulatorPage';
 import { LiveMonitorPage } from './components/LiveMonitorPage';
-import type { SensorData, InstrumentId, KeybindConfig } from './audio/types';
+import type { SensorData, InstrumentId, KeybindConfig, CalibrationConfig } from './audio/types';
 import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION, DEFAULT_KEYBIND_CONFIG, getSensorMode } from './audio/types';
 import { SoundEngine } from './audio/soundEngine';
 import { useLiveSensor } from './hooks/useLiveSensor';
@@ -18,6 +18,7 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [instrumentId, setInstrumentId] = useState<InstrumentId>('violin');
   const [keybindConfig, setKeybindConfig] = useState<KeybindConfig>(DEFAULT_KEYBIND_CONFIG);
+  const [calibration, setCalibration] = useState<CalibrationConfig>(DEFAULT_CALIBRATION);
   const [liveEnabled, setLiveEnabled] = useState(false);
 
   // Live sensor data from the FastAPI WebSocket bridge
@@ -40,9 +41,9 @@ function App() {
   // Push sensor data to engine
   useEffect(() => {
     if (isPlaying) {
-      engineRef.current?.updateFromSensors(sensorData, DEFAULT_CALIBRATION, keybindConfig);
+      engineRef.current?.updateFromSensors(sensorData, calibration, keybindConfig);
     }
-  }, [sensorData, isPlaying, keybindConfig]);
+  }, [sensorData, isPlaying, keybindConfig, calibration]);
 
   // ── Instrument selection ──────────────────────────────────────────────
   const handleInstrumentChange = useCallback((id: InstrumentId) => {
@@ -92,6 +93,8 @@ function App() {
           liveStatus={liveStatus}
           keybindConfig={keybindConfig}
           onKeybindChange={setKeybindConfig}
+          calibration={calibration}
+          onCalibrationChange={setCalibration}
         />
       ) : (
         <SimulatorPage
@@ -105,6 +108,8 @@ function App() {
           displayParams={displayParams}
           keybindConfig={keybindConfig}
           onKeybindChange={setKeybindConfig}
+          calibration={calibration}
+          onCalibrationChange={setCalibration}
         />
       )}
     </Layout>

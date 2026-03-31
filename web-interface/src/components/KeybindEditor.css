@@ -113,3 +113,19 @@
     opacity: 0.6;
     margin: var(--spacing-xs) 0 0 0;
 }
+
+.keybind-slider {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+.keybind-threshold-value {
+    flex: 0 0 36px;
+    text-align: right;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-primary);
+    font-variant-numeric: tabular-nums;
+}

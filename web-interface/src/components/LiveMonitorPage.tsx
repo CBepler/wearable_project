@@ -1,4 +1,4 @@
-import type { SensorData, InstrumentId, SensorMode, DisplayParams, KeybindConfig } from '../audio/types';
+import type { SensorData, InstrumentId, SensorMode, DisplayParams, KeybindConfig, CalibrationConfig } from '../audio/types';
 import type { ConnectionStatus } from '../hooks/useLiveSensor';
 import { SensorGraph } from './SensorGraph';
 import { InstrumentSelector } from './InstrumentSelector';
@@ -19,6 +19,8 @@ interface LiveMonitorPageProps {
     liveStatus: ConnectionStatus;
     keybindConfig: KeybindConfig;
     onKeybindChange: (config: KeybindConfig) => void;
+    calibration: CalibrationConfig;
+    onCalibrationChange: (cal: CalibrationConfig) => void;
 }
 
 const STATUS_LABEL: Record<ConnectionStatus, string> = {
@@ -46,6 +48,8 @@ export function LiveMonitorPage({
     liveStatus,
     keybindConfig,
     onKeybindChange,
+    calibration,
+    onCalibrationChange,
 }: LiveMonitorPageProps) {
     return (
         <div className="live-monitor-page">
@@ -73,7 +77,7 @@ export function LiveMonitorPage({
             </div>
             <div className="monitor-sidebar">
                 <InstrumentSelector value={instrumentId} onChange={onInstrumentChange} />
-                <KeybindEditor config={keybindConfig} onChange={onKeybindChange} sensorMode={sensorMode} />
+                <KeybindEditor config={keybindConfig} onChange={onKeybindChange} sensorMode={sensorMode} calibration={calibration} onCalibrationChange={onCalibrationChange} />
             </div>
         </div>
     );

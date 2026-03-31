@@ -1,4 +1,4 @@
-import type { SensorData, InstrumentId, SensorMode, DisplayParams, KeybindConfig } from '../audio/types';
+import type { SensorData, InstrumentId, SensorMode, DisplayParams, KeybindConfig, CalibrationConfig } from '../audio/types';
 import { SensorSimulator } from './SensorSimulator';
 import { InstrumentSelector } from './InstrumentSelector';
 import { KeybindEditor } from './KeybindEditor';
@@ -16,6 +16,8 @@ interface SimulatorPageProps {
     displayParams: DisplayParams | undefined;
     keybindConfig: KeybindConfig;
     onKeybindChange: (config: KeybindConfig) => void;
+    calibration: CalibrationConfig;
+    onCalibrationChange: (cal: CalibrationConfig) => void;
 }
 
 export function SimulatorPage({
@@ -29,12 +31,14 @@ export function SimulatorPage({
     displayParams,
     keybindConfig,
     onKeybindChange,
+    calibration,
+    onCalibrationChange,
 }: SimulatorPageProps) {
     return (
         <div className="simulator-page">
             <div className="sim-page-sidebar">
                 <InstrumentSelector value={instrumentId} onChange={onInstrumentChange} />
-                <KeybindEditor config={keybindConfig} onChange={onKeybindChange} sensorMode={sensorMode} />
+                <KeybindEditor config={keybindConfig} onChange={onKeybindChange} sensorMode={sensorMode} calibration={calibration} onCalibrationChange={onCalibrationChange} />
                 <SoundOutputDisplay params={displayParams} isPlaying={isPlaying} sensorMode={sensorMode} digitalKeybinds={keybindConfig.digital} />
             </div>
             <div className="sim-page-main">

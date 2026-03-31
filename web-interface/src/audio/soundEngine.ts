@@ -230,7 +230,7 @@ export class SoundEngine {
         for (let i = 0; i < 5; i++) {
             const finger = FINGER_NAMES[i];
             const notes = binds[finger];
-            const isOn = installedFingers.has(i) && fingerValues[i] <= 0.8;
+            const isOn = installedFingers.has(i) && fingerValues[i] <= cal.digitalThreshold;
             activeFingers.push(isOn);
 
             if (isOn && !this.fingerState[i]) {

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Settings2, RotateCcw } from 'lucide-react';
 import * as Tone from 'tone';
-import type { KeybindConfig, AnalogKeybinds, DigitalKeybinds, SensorSource, AnalogParam, SensorMode, FingerName } from '../audio/types';
-import { ANALOG_PARAMS, ALL_SENSOR_SOURCES, FINGER_NAMES, FINGER_COLORS, DEFAULT_KEYBIND_CONFIG } from '../audio/types';
+import type { KeybindConfig, AnalogKeybinds, DigitalKeybinds, CalibrationConfig, SensorSource, AnalogParam, SensorMode, FingerName } from '../audio/types';
+import { ANALOG_PARAMS, ALL_SENSOR_SOURCES, FINGER_NAMES, FINGER_COLORS, DEFAULT_KEYBIND_CONFIG, DEFAULT_CALIBRATION } from '../audio/types';
 import './KeybindEditor.css';
 
 interface KeybindEditorProps {
     config: KeybindConfig;
     onChange: (config: KeybindConfig) => void;
     sensorMode: SensorMode;
+    calibration: CalibrationConfig;
+    onCalibrationChange: (cal: CalibrationConfig) => void;
 }
 
 const PARAM_LABELS: Record<AnalogParam, string> = {
@@ -97,8 +99,11 @@ function DigitalBindings({ binds, onChange }: { binds: DigitalKeybinds; onChange
     );
 }
 
-export function KeybindEditor({ config, onChange, sensorMode }: KeybindEditorProps) {
-    const handleReset = () => onChange(DEFAULT_KEYBIND_CONFIG);
+export function KeybindEditor({ config, onChange, sensorMode, calibration, onCalibrationChange }: KeybindEditorProps) {
+    const handleReset = () => {
+        onChange(DEFAULT_KEYBIND_CONFIG);
+        onCalibrationChange(DEFAULT_CALIBRATION);
+    };
 
     return (
         <div className="card keybind-card">
@@ -118,10 +123,28 @@ export function KeybindEditor({ config, onChange, sensorMode }: KeybindEditorPro
                     onChange={analog => onChange({ ...config, analog })}
                 />
             ) : (
-                <DigitalBindings
-                    binds={config.digital}
-                    onChange={digital => onChange({ ...config, digital })}
-                />
+                <>
+                    <DigitalBindings
+                        binds={config.digital}
+                        onChange={digital => onChange({ ...config, digital })}
+                    />
+                    <div className="keybind-section">
+                        <h4 className="keybind-section-title">Flex Threshold</h4>
+                        <div className="keybind-row">
+                            <input
+                                type="range"
+                                className="keybind-slider"
+                                min={0}
+                                max={1}
+                                step={0.05}
+                                value={calibration.digitalThreshold}
+                                onChange={e => onCalibrationChange({ ...calibration, digitalThreshold: parseFloat(e.target.value) })}
+                            />
+                            <span className="keybind-threshold-value">{calibration.digitalThreshold.toFixed(2)}</span>
+                        </div>
+                        <p className="keybind-hint">Finger triggers when flex drops below this value</p>
+                    </div>
+                </>
             )}
         </div>
     );
