@@ -48,6 +48,7 @@ export function SimulatorPage({
                     isPlaying={isPlaying}
                     onTogglePlay={onTogglePlay}
                     sensorMode={sensorMode}
+                    calibration={calibration}
                 />
             </div>
         </div>

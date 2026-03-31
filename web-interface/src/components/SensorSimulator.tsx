@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Hand, Play, Square, RotateCcw } from 'lucide-react';
-import type { SensorData, SensorMode, FingerName, OrientationName } from '../audio/types';
-import { DEFAULT_SENSOR_DATA, FINGER_NAMES, FINGER_COLORS, SENSITIVITY_THRESHOLD, ORIENTATION_NAMES, ORIENTATION_COLORS } from '../audio/types';
+import type { SensorData, SensorMode, FingerName, OrientationName, CalibrationConfig } from '../audio/types';
+import { DEFAULT_SENSOR_DATA, FINGER_NAMES, FINGER_COLORS, ORIENTATION_NAMES, ORIENTATION_COLORS } from '../audio/types';
 import './SensorSimulator.css';
 
 interface SliderConfig {
@@ -38,6 +38,7 @@ interface SensorSimulatorProps {
     isPlaying: boolean;
     onTogglePlay: () => void;
     sensorMode: SensorMode;
+    calibration: CalibrationConfig;
 }
 
 export function SensorSimulator({
@@ -46,6 +47,7 @@ export function SensorSimulator({
     isPlaying,
     onTogglePlay,
     sensorMode,
+    calibration,
 }: SensorSimulatorProps) {
     const handleSliderChange = useCallback(
         (key: FingerName | OrientationName, value: number) => {
@@ -89,7 +91,7 @@ export function SensorSimulator({
     const renderSlider = (cfg: SliderConfig) => {
         const value = sensorData[cfg.key];
         const pct = value * 100;
-        const isOn = sensorMode === 'digital' && value >= SENSITIVITY_THRESHOLD;
+        const isOn = sensorMode === 'digital' && value <= calibration.digitalThreshold;
 
         return (
             <div
@@ -106,7 +108,7 @@ export function SensorSimulator({
                     {sensorMode === 'digital' && (
                         <div
                             className="sim-threshold-line"
-                            style={{ left: `${SENSITIVITY_THRESHOLD * 100}%` }}
+                            style={{ left: `${calibration.digitalThreshold * 100}%` }}
                         />
                     )}
                     <input
