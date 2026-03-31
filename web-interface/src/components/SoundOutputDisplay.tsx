@@ -1,5 +1,5 @@
 import { Volume2, Hand } from 'lucide-react';
-import type { DisplayParams, SensorMode } from '../audio/types';
+import type { DisplayParams, SensorMode, DigitalKeybinds } from '../audio/types';
 import { FINGER_NAMES, FINGER_COLORS } from '../audio/types';
 import './SoundOutputDisplay.css';
 
@@ -7,6 +7,7 @@ interface SoundOutputDisplayProps {
     params: DisplayParams | undefined;
     isPlaying: boolean;
     sensorMode: SensorMode;
+    digitalKeybinds?: DigitalKeybinds;
 }
 
 interface MeterConfig {
@@ -24,7 +25,7 @@ const DEFAULT_DISPLAY: DisplayParams = {
     activeFingers: [false, false, false, false, false],
 };
 
-export function SoundOutputDisplay({ params, isPlaying, sensorMode }: SoundOutputDisplayProps) {
+export function SoundOutputDisplay({ params, isPlaying, sensorMode, digitalKeybinds }: SoundOutputDisplayProps) {
     const p = params ?? DEFAULT_DISPLAY;
 
     // ── Analog meters ────────────────────────────────────────────────
@@ -133,7 +134,7 @@ export function SoundOutputDisplay({ params, isPlaying, sensorMode }: SoundOutpu
                                 } as React.CSSProperties}
                             >
                                 <span className="finger-key-label">{name.charAt(0).toUpperCase() + name.slice(1)}</span>
-                                <span className="finger-key-note">{['C4', 'D4', 'E4', 'G4', 'A4'][i]}</span>
+                                <span className="finger-key-note">{digitalKeybinds ? digitalKeybinds[name].join('+') : ['C4', 'D4', 'E4', 'G4', 'A4'][i]}</span>
                             </div>
                         ))}
                     </div>

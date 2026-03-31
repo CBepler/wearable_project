@@ -65,6 +65,51 @@ export const FINGER_COLORS: Record<FingerName, string> = {
     pinky: '#a78bfa',   // Violet 400
 };
 
+// ── Keybind types ───────────────────────────────────────────────────────────
+
+/** Any sensor input that can be assigned to a sound parameter. */
+export type SensorSource = FingerName | OrientationName;
+
+/** All available sensor sources (for UI dropdowns). */
+export const ALL_SENSOR_SOURCES: SensorSource[] = [...FINGER_NAMES, ...ORIENTATION_NAMES];
+
+/** Controllable sound parameters in analog mode. */
+export type AnalogParam = 'pitch' | 'volume' | 'brightness' | 'tremolo' | 'pan';
+export const ANALOG_PARAMS: AnalogParam[] = ['pitch', 'volume', 'brightness', 'tremolo', 'pan'];
+
+/** Analog keybinds: which sensor drives each sound parameter. */
+export type AnalogKeybinds = Record<AnalogParam, SensorSource>;
+
+/** Digital keybinds: notes/chords triggered by each finger. */
+export type DigitalKeybinds = Record<FingerName, string[]>;
+
+/** Combined keybind configuration. */
+export interface KeybindConfig {
+    analog: AnalogKeybinds;
+    digital: DigitalKeybinds;
+}
+
+export const DEFAULT_ANALOG_KEYBINDS: AnalogKeybinds = {
+    pitch: 'index',
+    volume: 'roll',
+    brightness: 'middle',
+    tremolo: 'ring',
+    pan: 'pinky',
+};
+
+export const DEFAULT_DIGITAL_KEYBINDS: DigitalKeybinds = {
+    thumb: ['C4'],
+    index: ['D4'],
+    middle: ['E4'],
+    ring: ['G4'],
+    pinky: ['A4'],
+};
+
+export const DEFAULT_KEYBIND_CONFIG: KeybindConfig = {
+    analog: DEFAULT_ANALOG_KEYBINDS,
+    digital: DEFAULT_DIGITAL_KEYBINDS,
+};
+
 /** Per-axis color palette for IMU orientation. */
 export const ORIENTATION_COLORS: Record<OrientationName, string> = {
     roll: '#f97316',    // Orange 500

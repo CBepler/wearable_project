@@ -3,8 +3,8 @@ import { Layout } from './components/Layout';
 import type { PageId } from './components/Layout';
 import { SimulatorPage } from './components/SimulatorPage';
 import { LiveMonitorPage } from './components/LiveMonitorPage';
-import type { SensorData, InstrumentId } from './audio/types';
-import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION, getSensorMode } from './audio/types';
+import type { SensorData, InstrumentId, KeybindConfig } from './audio/types';
+import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION, DEFAULT_KEYBIND_CONFIG, getSensorMode } from './audio/types';
 import { SoundEngine } from './audio/soundEngine';
 import { useLiveSensor } from './hooks/useLiveSensor';
 import './App.css';
@@ -17,6 +17,7 @@ function App() {
   const [simSensorData, setSimSensorData] = useState<SensorData>(DEFAULT_SENSOR_DATA);
   const [isPlaying, setIsPlaying] = useState(false);
   const [instrumentId, setInstrumentId] = useState<InstrumentId>('violin');
+  const [keybindConfig, setKeybindConfig] = useState<KeybindConfig>(DEFAULT_KEYBIND_CONFIG);
   const [liveEnabled, setLiveEnabled] = useState(false);
 
   // Live sensor data from the FastAPI WebSocket bridge
@@ -39,9 +40,9 @@ function App() {
   // Push sensor data to engine
   useEffect(() => {
     if (isPlaying) {
-      engineRef.current?.updateFromSensors(sensorData, DEFAULT_CALIBRATION);
+      engineRef.current?.updateFromSensors(sensorData, DEFAULT_CALIBRATION, keybindConfig);
     }
-  }, [sensorData, isPlaying]);
+  }, [sensorData, isPlaying, keybindConfig]);
 
   // ── Instrument selection ──────────────────────────────────────────────
   const handleInstrumentChange = useCallback((id: InstrumentId) => {
@@ -58,7 +59,7 @@ function App() {
         setIsPlaying(false);
       } else {
         await engine.start();
-        engine.updateFromSensors(sensorData, DEFAULT_CALIBRATION);
+        engine.updateFromSensors(sensorData, DEFAULT_CALIBRATION, keybindConfig);
         setIsPlaying(true);
       }
     } catch (err) {
@@ -89,6 +90,8 @@ function App() {
           liveEnabled={liveEnabled}
           onToggleLive={() => setLiveEnabled(prev => !prev)}
           liveStatus={liveStatus}
+          keybindConfig={keybindConfig}
+          onKeybindChange={setKeybindConfig}
         />
       ) : (
         <SimulatorPage
@@ -100,6 +103,8 @@ function App() {
           instrumentId={instrumentId}
           onInstrumentChange={handleInstrumentChange}
           displayParams={displayParams}
+          keybindConfig={keybindConfig}
+          onKeybindChange={setKeybindConfig}
         />
       )}
     </Layout>

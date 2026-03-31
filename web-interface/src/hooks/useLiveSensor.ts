@@ -18,7 +18,7 @@ export function useLiveSensor(enabled: boolean) {
     const [sensorData, setSensorData] = useState<SensorData>(DEFAULT_SENSOR_DATA);
     const [status, setStatus] = useState<ConnectionStatus>('disconnected');
     const wsRef = useRef<WebSocket | null>(null);
-    const reconnectTimer = useRef<ReturnType<typeof setTimeout>>();
+    const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     const connect = useCallback(() => {
         if (!enabled) return;

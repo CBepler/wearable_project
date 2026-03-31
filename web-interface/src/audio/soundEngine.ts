@@ -1,6 +1,6 @@
 import * as Tone from 'tone';
-import type { SensorData, CalibrationConfig, InstrumentId, DisplayParams } from './types';
-import { SENSITIVITY_THRESHOLD, isDigitalInstrument } from './types';
+import type { SensorData, CalibrationConfig, InstrumentId, DisplayParams, KeybindConfig, AnalogKeybinds, DigitalKeybinds, SensorSource } from './types';
+import { isDigitalInstrument, DEFAULT_KEYBIND_CONFIG, FINGER_NAMES, ORIENTATION_NAMES } from './types';
 import type { Instrument } from './instruments/Instrument';
 import { ViolinInstrument } from './instruments/violin';
 import { PianoInstrument } from './instruments/piano';
@@ -9,9 +9,6 @@ import { PianoInstrument } from './instruments/piano';
 
 const MIDI_LOW = 48;   // C3
 const MIDI_HIGH = 84;  // C6 (3 octaves)
-
-/** Notes assigned to each finger in digital mode (C major pentatonic). */
-const DIGITAL_FINGER_NOTES = ['C4', 'D4', 'E4', 'G4', 'A4'];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -49,6 +46,9 @@ export class SoundEngine {
     // ── Digital mode state ───────────────────────────────────────────────────
     /** Tracks which fingers are currently "on" to avoid re-triggers. */
     private fingerState: boolean[] = [false, false, false, false, false];
+
+    /** Last-used keybind config (for releaseAllFingers on stop). */
+    private _lastKeybinds: KeybindConfig = DEFAULT_KEYBIND_CONFIG;
 
     // ── Display values (for UI) ──────────────────────────────────────────────
     private _lastDisplay: DisplayParams = {
@@ -138,39 +138,55 @@ export class SoundEngine {
 
     // ── Core: sensor → sound ─────────────────────────────────────────────────
 
-    updateFromSensors(data: SensorData, cal: CalibrationConfig): void {
+    updateFromSensors(data: SensorData, cal: CalibrationConfig, keybinds: KeybindConfig = DEFAULT_KEYBIND_CONFIG): void {
         if (!this._isPlaying || !this.instrument) return;
+        this._lastKeybinds = keybinds;
 
         if (isDigitalInstrument(this._instrumentId)) {
-            this.updateDigital(data, cal);
+            this.updateDigital(data, cal, keybinds.digital);
         } else {
-            this.updateAnalog(data, cal);
+            this.updateAnalog(data, cal, keybinds.analog);
         }
     }
 
     // ── Analog mode (violin / continuous instruments) ────────────────────────
 
-    private updateAnalog(data: SensorData, cal: CalibrationConfig): void {
+    /** Read a sensor value by source name. */
+    private readSensor(data: SensorData, source: SensorSource): number {
+        return data[source];
+    }
+
+    /** Normalize any sensor source to 0..1 range. */
+    private normSensor(data: SensorData, source: SensorSource): number {
+        const raw = this.readSensor(data, source);
+        if ((ORIENTATION_NAMES as readonly string[]).includes(source)) {
+            return mapRange(raw, -180, 180, 0, 1);
+        }
+        return clamp(raw, 0, 1);
+    }
+
+    private updateAnalog(data: SensorData, cal: CalibrationConfig, binds: AnalogKeybinds): void {
         const inst = this.instrument!;
 
-        // 1. INDEX → Pitch: bend sweeps through 3-octave range (C3..C6)
-        const midiFloat = mapRange(data.index, 0, 1, MIDI_LOW, MIDI_HIGH);
+        // 1. Pitch: assigned sensor sweeps through 3-octave range (C3..C6)
+        const pitchNorm = this.normSensor(data, binds.pitch);
+        const midiFloat = mapRange(pitchNorm, 0, 1, MIDI_LOW, MIDI_HIGH);
         const midiNote = Math.round(midiFloat);
         const freq = Tone.Frequency(midiNote, 'midi').toFrequency();
         const noteName = Tone.Frequency(midiNote, 'midi').toNote();
         inst.setNote(freq);
 
-        // 2. ROLL → Volume: roll -180..+180 mapped to 0..1
-        const normVol = clamp(mapRange(data.roll, -180, 180, 0, 1) * cal.sensitivity * 2, 0, 1);
+        // 2. Volume: assigned sensor mapped to dB
+        const normVol = clamp(this.normSensor(data, binds.volume) * cal.sensitivity * 2, 0, 1);
         const volDb = mapRange(normVol, 0, 1, -36, 12);
         inst.setVolume(volDb);
 
-        // 3. MIDDLE → Brightness / timbre
-        const brightnessNorm = clamp(data.middle, 0, 1);
+        // 3. Brightness / timbre
+        const brightnessNorm = this.normSensor(data, binds.brightness);
         inst.setBrightness(brightnessNorm);
 
-        // 4. RING → Vibrato / tremolo depth
-        const tremoloNorm = clamp(data.ring, 0, 1);
+        // 4. Vibrato / tremolo depth
+        const tremoloNorm = this.normSensor(data, binds.tremolo);
         if (this.tremolo) {
             this.tremolo.frequency.value = 2 + tremoloNorm * 10;
             this.tremolo.depth.value = tremoloNorm * 0.8;
@@ -179,8 +195,9 @@ export class SoundEngine {
             this.vibrato.depth.value = 0.02 + tremoloNorm * 0.08;
         }
 
-        // 5. PINKY → Pan
-        const pan = mapRange(data.pinky, 0, 1, -1, 1);
+        // 5. Pan
+        const panNorm = this.normSensor(data, binds.pan);
+        const pan = mapRange(panNorm, 0, 1, -1, 1);
         if (this.panner) this.panner.pan.value = pan;
 
         // Update display
@@ -197,7 +214,7 @@ export class SoundEngine {
 
     // ── Digital mode (piano / discrete-note instruments) ─────────────────────
 
-    private updateDigital(data: SensorData, cal: CalibrationConfig): void {
+    private updateDigital(data: SensorData, cal: CalibrationConfig, binds: DigitalKeybinds): void {
         const inst = this.instrument!;
         const fingerValues = [data.thumb, data.index, data.middle, data.ring, data.pinky];
         // Only check fingers that have sensors installed (currently just thumb)
@@ -211,26 +228,35 @@ export class SoundEngine {
         inst.setVolume(volDb);
 
         for (let i = 0; i < 5; i++) {
+            const finger = FINGER_NAMES[i];
+            const notes = binds[finger];
             const isOn = installedFingers.has(i) && fingerValues[i] <= 0.8;
             activeFingers.push(isOn);
 
             if (isOn && !this.fingerState[i]) {
-                // Finger just bent past threshold → trigger
-                inst.triggerNote?.(DIGITAL_FINGER_NOTES[i]);
+                // Finger just bent past threshold → trigger all notes in chord
+                for (const note of notes) {
+                    inst.triggerNote?.(note);
+                }
             } else if (!isOn && this.fingerState[i]) {
-                // Finger just released → release note
-                inst.releaseNote?.(DIGITAL_FINGER_NOTES[i]);
+                // Finger just released → release all notes in chord
+                for (const note of notes) {
+                    inst.releaseNote?.(note);
+                }
             }
 
-            if (isOn) activeNote = DIGITAL_FINGER_NOTES[i];
+            if (isOn) activeNote = notes.join('+');
             this.fingerState[i] = isOn;
         }
 
         const activeCount = activeFingers.filter(Boolean).length;
+        const displayFreq = activeCount > 0 && activeNote !== '—'
+            ? Math.round(Tone.Frequency(activeNote.split('+')[0]).toFrequency())
+            : 0;
 
         this._lastDisplay = {
             note: activeCount > 0 ? activeNote : '—',
-            frequency: activeCount > 0 ? Math.round(Tone.Frequency(activeNote).toFrequency()) : 0,
+            frequency: displayFreq,
             volumePct: Math.round(normVol * 100),
             pan: 0,
             tremoloPct: 0,
@@ -243,7 +269,10 @@ export class SoundEngine {
         if (!this.instrument) return;
         for (let i = 0; i < 5; i++) {
             if (this.fingerState[i]) {
-                this.instrument.releaseNote?.(DIGITAL_FINGER_NOTES[i]);
+                const notes = this._lastKeybinds.digital[FINGER_NAMES[i]];
+                for (const note of notes) {
+                    this.instrument.releaseNote?.(note);
+                }
                 this.fingerState[i] = false;
             }
         }
