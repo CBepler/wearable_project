@@ -12,7 +12,7 @@ PACKET FORMAT:
                       only as many R fields as NUM_FLEX in the firmware
 
 CONFIGURATION:
-    NUM_FLEX    — must match NUM_FLEX in the firmware (currently 1)
+    NUM_FLEX    — must match NUM_FLEX in the firmware (currently 2)
     SERVER_URL  — FastAPI bridge endpoint (set by teammate)
     PRINT_INTERVAL — seconds between printed lines (increase to slow output)
 

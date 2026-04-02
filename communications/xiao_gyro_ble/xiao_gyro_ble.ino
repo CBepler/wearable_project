@@ -26,7 +26,7 @@
 //    Finger   Pin    Status
 //    ──────   ───    ──────
 //    Thumb    A0     INSTALLED
-//    Index    A1     not yet installed
+//    Index    A1     INSTALLED
 //    Middle   A2     not yet installed
 //    Ring     A3     not yet installed
 //    Pinky    A4     not yet installed
