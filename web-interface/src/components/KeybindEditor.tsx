@@ -67,12 +67,8 @@ function DigitalBindings({ binds, onChange }: { binds: DigitalKeybinds; onChange
             try { Tone.Frequency(n).toFrequency(); return true; }
             catch { return false; }
         });
-        if (valid.length > 0) {
-            onChange({ ...binds, [finger]: valid });
-            setEditValues(prev => ({ ...prev, [finger]: valid.join(', ') }));
-        } else {
-            setEditValues(prev => ({ ...prev, [finger]: binds[finger].join(', ') }));
-        }
+        onChange({ ...binds, [finger]: valid });
+        setEditValues(prev => ({ ...prev, [finger]: valid.join(', ') }));
     };
 
     return (
