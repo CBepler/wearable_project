@@ -1,6 +1,7 @@
-import type { SensorData, InstrumentId, SensorMode, DisplayParams } from '../audio/types';
+import type { SensorData, InstrumentId, SensorMode, DisplayParams, KeybindConfig, CalibrationConfig } from '../audio/types';
 import { SensorSimulator } from './SensorSimulator';
 import { InstrumentSelector } from './InstrumentSelector';
+import { KeybindEditor } from './KeybindEditor';
 import { SoundOutputDisplay } from './SoundOutputDisplay';
 import './SimulatorPage.css';
 
@@ -13,6 +14,10 @@ interface SimulatorPageProps {
     instrumentId: InstrumentId;
     onInstrumentChange: (id: InstrumentId) => void;
     displayParams: DisplayParams | undefined;
+    keybindConfig: KeybindConfig;
+    onKeybindChange: (config: KeybindConfig) => void;
+    calibration: CalibrationConfig;
+    onCalibrationChange: (cal: CalibrationConfig) => void;
 }
 
 export function SimulatorPage({
@@ -24,12 +29,17 @@ export function SimulatorPage({
     instrumentId,
     onInstrumentChange,
     displayParams,
+    keybindConfig,
+    onKeybindChange,
+    calibration,
+    onCalibrationChange,
 }: SimulatorPageProps) {
     return (
         <div className="simulator-page">
             <div className="sim-page-sidebar">
                 <InstrumentSelector value={instrumentId} onChange={onInstrumentChange} />
-                <SoundOutputDisplay params={displayParams} isPlaying={isPlaying} sensorMode={sensorMode} />
+                <KeybindEditor config={keybindConfig} onChange={onKeybindChange} sensorMode={sensorMode} calibration={calibration} onCalibrationChange={onCalibrationChange} />
+                <SoundOutputDisplay params={displayParams} isPlaying={isPlaying} sensorMode={sensorMode} digitalKeybinds={keybindConfig.digital} />
             </div>
             <div className="sim-page-main">
                 <SensorSimulator
@@ -38,6 +48,7 @@ export function SimulatorPage({
                     isPlaying={isPlaying}
                     onTogglePlay={onTogglePlay}
                     sensorMode={sensorMode}
+                    calibration={calibration}
                 />
             </div>
         </div>

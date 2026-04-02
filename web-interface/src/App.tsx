@@ -3,8 +3,8 @@ import { Layout } from './components/Layout';
 import type { PageId } from './components/Layout';
 import { SimulatorPage } from './components/SimulatorPage';
 import { LiveMonitorPage } from './components/LiveMonitorPage';
-import type { SensorData, InstrumentId } from './audio/types';
-import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION, getSensorMode } from './audio/types';
+import type { SensorData, InstrumentId, KeybindConfig, CalibrationConfig, DisplayParams } from './audio/types';
+import { DEFAULT_SENSOR_DATA, DEFAULT_CALIBRATION, DEFAULT_KEYBIND_CONFIG, getSensorMode } from './audio/types';
 import { SoundEngine } from './audio/soundEngine';
 import { useLiveSensor } from './hooks/useLiveSensor';
 import './App.css';
@@ -17,6 +17,8 @@ function App() {
   const [simSensorData, setSimSensorData] = useState<SensorData>(DEFAULT_SENSOR_DATA);
   const [isPlaying, setIsPlaying] = useState(false);
   const [instrumentId, setInstrumentId] = useState<InstrumentId>('violin');
+  const [keybindConfig, setKeybindConfig] = useState<KeybindConfig>(DEFAULT_KEYBIND_CONFIG);
+  const [calibration, setCalibration] = useState<CalibrationConfig>(DEFAULT_CALIBRATION);
   const [liveEnabled, setLiveEnabled] = useState(false);
 
   // Live sensor data from the FastAPI WebSocket bridge
@@ -36,12 +38,15 @@ function App() {
     engineRef.current = new SoundEngine();
   }
 
+  const [displayParams, setDisplayParams] = useState<DisplayParams | undefined>(undefined);
+
   // Push sensor data to engine
   useEffect(() => {
     if (isPlaying) {
-      engineRef.current?.updateFromSensors(sensorData, DEFAULT_CALIBRATION);
+      engineRef.current?.updateFromSensors(sensorData, calibration, keybindConfig);
+      setDisplayParams(engineRef.current?.displayParams);
     }
-  }, [sensorData, isPlaying]);
+  }, [sensorData, isPlaying, keybindConfig, calibration]);
 
   // ── Instrument selection ──────────────────────────────────────────────
   const handleInstrumentChange = useCallback((id: InstrumentId) => {
@@ -58,13 +63,14 @@ function App() {
         setIsPlaying(false);
       } else {
         await engine.start();
-        engine.updateFromSensors(sensorData, DEFAULT_CALIBRATION);
+        engine.updateFromSensors(sensorData, calibration, keybindConfig);
+        setDisplayParams(engine.displayParams);
         setIsPlaying(true);
       }
     } catch (err) {
       console.error('[SoundEngine] Play/Stop error:', err);
     }
-  }, [sensorData]);
+  }, [sensorData, calibration, keybindConfig]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -72,8 +78,6 @@ function App() {
       engineRef.current?.stop();
     };
   }, []);
-
-  const displayParams = engineRef.current?.displayParams;
 
   return (
     <Layout activePage={activePage} onPageChange={setActivePage}>
@@ -89,6 +93,10 @@ function App() {
           liveEnabled={liveEnabled}
           onToggleLive={() => setLiveEnabled(prev => !prev)}
           liveStatus={liveStatus}
+          keybindConfig={keybindConfig}
+          onKeybindChange={setKeybindConfig}
+          calibration={calibration}
+          onCalibrationChange={setCalibration}
         />
       ) : (
         <SimulatorPage
@@ -100,6 +108,10 @@ function App() {
           instrumentId={instrumentId}
           onInstrumentChange={handleInstrumentChange}
           displayParams={displayParams}
+          keybindConfig={keybindConfig}
+          onKeybindChange={setKeybindConfig}
+          calibration={calibration}
+          onCalibrationChange={setCalibration}
         />
       )}
     </Layout>

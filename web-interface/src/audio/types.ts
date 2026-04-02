@@ -32,6 +32,8 @@ export interface SensorData {
 export interface CalibrationConfig {
     /** Volume sensitivity multiplier (0–1 scale from the 0-100 slider) */
     sensitivity: number;
+    /** Digital mode flex threshold: finger is "on" when its value drops below this (1 = no flex, 0 = full flex). */
+    digitalThreshold: number;
 }
 
 /** Available instrument identifiers. */
@@ -65,6 +67,51 @@ export const FINGER_COLORS: Record<FingerName, string> = {
     pinky: '#a78bfa',   // Violet 400
 };
 
+// ── Keybind types ───────────────────────────────────────────────────────────
+
+/** Any sensor input that can be assigned to a sound parameter. */
+export type SensorSource = FingerName | OrientationName;
+
+/** All available sensor sources (for UI dropdowns). */
+export const ALL_SENSOR_SOURCES: SensorSource[] = [...FINGER_NAMES, ...ORIENTATION_NAMES];
+
+/** Controllable sound parameters in analog mode. */
+export type AnalogParam = 'pitch' | 'volume' | 'brightness' | 'tremolo' | 'pan';
+export const ANALOG_PARAMS: AnalogParam[] = ['pitch', 'volume', 'brightness', 'tremolo', 'pan'];
+
+/** Analog keybinds: which sensor drives each sound parameter. */
+export type AnalogKeybinds = Record<AnalogParam, SensorSource>;
+
+/** Digital keybinds: notes/chords triggered by each finger. */
+export type DigitalKeybinds = Record<FingerName, string[]>;
+
+/** Combined keybind configuration. */
+export interface KeybindConfig {
+    analog: AnalogKeybinds;
+    digital: DigitalKeybinds;
+}
+
+export const DEFAULT_ANALOG_KEYBINDS: AnalogKeybinds = {
+    pitch: 'index',
+    volume: 'roll',
+    brightness: 'middle',
+    tremolo: 'ring',
+    pan: 'pinky',
+};
+
+export const DEFAULT_DIGITAL_KEYBINDS: DigitalKeybinds = {
+    thumb: ['C4'],
+    index: ['D4'],
+    middle: ['E4'],
+    ring: ['G4'],
+    pinky: ['A4'],
+};
+
+export const DEFAULT_KEYBIND_CONFIG: KeybindConfig = {
+    analog: DEFAULT_ANALOG_KEYBINDS,
+    digital: DEFAULT_DIGITAL_KEYBINDS,
+};
+
 /** Per-axis color palette for IMU orientation. */
 export const ORIENTATION_COLORS: Record<OrientationName, string> = {
     roll: '#f97316',    // Orange 500
@@ -95,11 +142,11 @@ export interface DisplayParams {
 
 /** Default sensor data — hand flat / no bend, neutral orientation. */
 export const DEFAULT_SENSOR_DATA: SensorData = {
-    thumb: 0,
-    index: 0,
-    middle: 0,
-    ring: 0,
-    pinky: 0,
+    thumb: 1,
+    index: 1,
+    middle: 1,
+    ring: 1,
+    pinky: 1,
     roll: 0,
     pitch: 0,
     yaw: 0,
@@ -108,4 +155,5 @@ export const DEFAULT_SENSOR_DATA: SensorData = {
 /** Default calibration. */
 export const DEFAULT_CALIBRATION: CalibrationConfig = {
     sensitivity: 0.5,
+    digitalThreshold: 0.8,
 };
