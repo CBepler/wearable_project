@@ -34,7 +34,7 @@ NUS_TX_CHAR    = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
 # ── Flex sensors ─────────────────────────────────────────────
 # Must match NUM_FLEX in the firmware — increase as you install more sensors
-NUM_FLEX       = 1
+NUM_FLEX       = 2
 FINGER_NAMES   = ["Thumb", "Index", "Middle", "Ring", "Pinky"]
 
 # Normalisation constants — map raw resistance (Ω) to 0.0–1.0
