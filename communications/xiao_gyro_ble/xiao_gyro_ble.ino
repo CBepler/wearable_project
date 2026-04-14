@@ -48,7 +48,7 @@ LSM6DS3 imu(I2C_MODE, 0x6A);
 // Increase alpha → smoother but slower to respond to fast motion
 // Decrease alpha → more responsive but noisier
 const float ALPHA    = 0.98f;
-const float SAMPLE_S = 0.02f;   // 20ms = 50 Hz, in seconds
+const float SAMPLE_S = 0.01f;   // 10ms = 100 Hz, in seconds
 
 float roll  = 0.0f;
 float pitch = 0.0f;
@@ -150,6 +150,10 @@ void setup() {
   BLE.addService(uartService);
   BLE.advertise();
 
+  // Request a fast connection interval for low-latency instrument response.
+  // Parameters: min 7.5ms, max 15ms (in units of 1.25ms → 0x0006, 0x000C)
+  BLE.setConnectionInterval(0x0006, 0x000C);
+
   Serial.println("Advertising as \"HandMusic\"...");
 }
 
@@ -165,7 +169,7 @@ void loop() {
     digitalWrite(LED_RED,   HIGH);
     digitalWrite(LED_GREEN, LOW);
 
-    if (now - lastSendMs >= 20) {  // 50 Hz
+    if (now - lastSendMs >= 10) {  // 100 Hz
       lastSendMs = now;
 
       // Read raw IMU

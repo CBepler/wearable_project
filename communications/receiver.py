@@ -113,9 +113,10 @@ async def _send_to_server(packet: dict):
     if _http_client is None:
         return
     try:
+        # Fire-and-forget: don't await the full response round-trip
         await _http_client.post(SERVER_URL, json=packet)
-    except httpx.ConnectError:
-        pass  # server not running — silently skip
+    except (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteError):
+        pass  # server not running or slow — silently skip
 
 
 def on_notification(sender, data: bytearray):
@@ -129,22 +130,23 @@ def on_notification(sender, data: bytearray):
         if not line:
             continue
 
-        now = time.time()
-        if now - _last_print < PRINT_INTERVAL:
-            continue
-        _last_print = now
-
         packet = parse_line(line)
         if packet is None:
             continue
 
-        _print_packet(packet)
+        # Always forward every packet to the server — never drop data
         asyncio.get_event_loop().create_task(_send_to_server(packet))
+
+        # Throttle only the console print (cosmetic, not in the data path)
+        now = time.time()
+        if now - _last_print >= PRINT_INTERVAL:
+            _last_print = now
+            _print_packet(packet)
 
 
 async def run():
     global _http_client
-    _http_client = httpx.AsyncClient(timeout=2.0)
+    _http_client = httpx.AsyncClient(timeout=0.5)
 
     print(f'Scanning for "{DEVICE_NAME}"...')
     device = await BleakScanner.find_device_by_name(DEVICE_NAME, timeout=15.0)
