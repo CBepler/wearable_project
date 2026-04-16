@@ -91,7 +91,7 @@ export function SensorSimulator({
     const renderSlider = (cfg: SliderConfig) => {
         const value = sensorData[cfg.key];
         const pct = value * 100;
-        const isOn = sensorMode === 'digital' && value <= calibration.digitalThreshold;
+        const isOn = sensorMode === 'digital' && value >= calibration.digitalThreshold;
 
         return (
             <div
