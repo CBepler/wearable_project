@@ -57,9 +57,9 @@ float yaw   = 0.0f;
 // ── Flex sensors ─────────────────────────────────────────────
 // NUM_FLEX controls how many are read and transmitted.
 // Increase from 1 to 2, 3, 4, 5 as you install each sensor.
-const int   NUM_FLEX         = 2;
+const int   NUM_FLEX         = 5;
 const int   FLEX_PINS[5]     = { A0, A1, A2, A3, A4 };
-const float R_FIXED          = 47000.0f;  // 47kΩ fixed resistor
+const float R_FIXED          = 25000.0f;  // 47kΩ fixed resistor
 const float V_SUPPLY         = 3.3f;
 const float ADC_MAX          = 4095.0f;   // 12-bit ADC
 
