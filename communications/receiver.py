@@ -35,7 +35,7 @@ NUS_TX_CHAR    = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 # ── Flex sensors ─────────────────────────────────────────────
 # Must match NUM_FLEX in the firmware — increase as you install more sensors
 NUM_FLEX       = 5
-FINGER_NAMES   = ["Thumb", "Index", "Middle", "Ring", "Pinky"]
+FINGER_NAMES   = ["Middle", "Index", "Ring", "Pinky", "Thumb"]  # matches actual pin wiring
 
 # Normalisation constants — map raw resistance (Ω) to 0.0–1.0
 # Adjust FLEX_R_FLAT and FLEX_R_BENT to match your sensors after calibration
@@ -82,7 +82,8 @@ def parse_line(line: str) -> dict | None:
         "accel_mag": accel_mag,
     }
     # Always include all 5 finger keys — uninstalled sensors default to 0.0
-    for i, name in enumerate(["thumb", "index", "middle", "ring", "pinky"]):
+    # Actual wiring: A0=Middle, A1=Index, A2=Ring, A3=Pinky, A4=Thumb
+    for i, name in enumerate(["middle", "index", "ring", "pinky", "thumb"]):
         packet[name] = flex_norm[i] if i < NUM_FLEX else 0.0
 
     return packet
@@ -99,7 +100,7 @@ def _print_packet(packet: dict):
     if NUM_FLEX > 0:
         flex_str = "  ".join(
             f"{FINGER_NAMES[i]}:{packet[n]:>5.2f}"
-            for i, n in enumerate(["thumb", "index", "middle", "ring", "pinky"])
+            for i, n in enumerate(["middle", "index", "ring", "pinky", "thumb"])
             if i < NUM_FLEX
         )
         print(f"{base}  |  {flex_str}")
