@@ -119,7 +119,7 @@ float readFlexResistance(int pin) {
 // ════════════════════════════════════════════════════════════
 void setup() {
   Serial.begin(115200);
-
+  analogReadResolution(12);
   pinMode(LED_RED,   OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
   digitalWrite(LED_RED,   HIGH);
@@ -162,6 +162,12 @@ void setup() {
 //  Main Loop
 // ════════════════════════════════════════════════════════════
 void loop() {
+
+  Serial.print("A0:"); Serial.print(analogRead(A0));
+  Serial.print(" A1:"); Serial.print(analogRead(A1));
+  Serial.print(" A2:"); Serial.print(analogRead(A2));
+  Serial.print(" A3:"); Serial.print(analogRead(A3));
+  Serial.print(" A4:"); Serial.println(analogRead(A4));
   unsigned long now = millis();
   BLEDevice central = BLE.central();
 
