@@ -233,8 +233,8 @@ export class SoundEngine {
     private updateDigital(data: SensorData, cal: CalibrationConfig, binds: DigitalKeybinds): void {
         const inst = this.instrument!;
         const fingerValues = [data.thumb, data.index, data.middle, data.ring, data.pinky];
-        // Only check fingers that have sensors installed (thumb + index)
-        const installedFingers = new Set([0, 1]);
+        // Check all five fingers (all flex sensors installed)
+        const installedFingers = new Set([0, 1, 2, 3, 4]);
         const activeFingers: boolean[] = [];
         let activeNote = '—';
 
