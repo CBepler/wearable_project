@@ -37,7 +37,7 @@ void setup() {
 }
 
 void loop() {
-  for (int i = 0; i < 5; i++) {aq
+  for (int i = 0; i < 5; i++) {
     int   raw  = analogRead(FLEX_PINS[i]);
     float vOut = raw * V_SUPPLY / ADC_MAX;
     float res  = (vOut < 0.001f) ? 999999.0f
