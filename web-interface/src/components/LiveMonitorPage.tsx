@@ -73,7 +73,7 @@ export function LiveMonitorPage({
                     </button>
                 </div>
                 <SensorGraph sensorData={sensorData} />
-                <SoundOutputDisplay params={displayParams} isPlaying={isPlaying} sensorMode={sensorMode} />
+                <SoundOutputDisplay params={displayParams} isPlaying={isPlaying} sensorMode={sensorMode} digitalKeybinds={keybindConfig.digital} />
             </div>
             <div className="monitor-sidebar">
                 <InstrumentSelector value={instrumentId} onChange={onInstrumentChange} />
