@@ -90,6 +90,13 @@ void updateFilter(float gx, float gy, float gz,
   float accel_roll  = atan2(ay, az)                    * 180.0f / M_PI;
   float accel_pitch = atan2(-ax, sqrt(ay*ay + az*az))  * 180.0f / M_PI;
 
+  // Unwrap accel angles to match the gyro estimate so the atan2 ±180°
+  // discontinuity does not yank the filter across the full range.
+  while (accel_roll  - gyro_roll  >  180.0f) accel_roll  -= 360.0f;
+  while (accel_roll  - gyro_roll  < -180.0f) accel_roll  += 360.0f;
+  while (accel_pitch - gyro_pitch >  180.0f) accel_pitch -= 360.0f;
+  while (accel_pitch - gyro_pitch < -180.0f) accel_pitch += 360.0f;
+
   // Fuse: trust gyro for fast motion, nudge toward accel for slow drift
   roll  = ALPHA * gyro_roll  + (1.0f - ALPHA) * accel_roll;
   pitch = ALPHA * gyro_pitch + (1.0f - ALPHA) * accel_pitch;
@@ -97,9 +104,14 @@ void updateFilter(float gx, float gy, float gz,
   // Yaw: gyro only — no absolute reference without a magnetometer
   yaw = gyro_yaw;
 
-  // Keep yaw in [-180, 180] to avoid unbounded growth
-  if (yaw >  180.0f) yaw -= 360.0f;
-  if (yaw < -180.0f) yaw += 360.0f;
+  // Clamp all axes to [-180, 180] so they stick at the extremes
+  // instead of wrapping around and snapping to the opposite value.
+  if (roll  >  180.0f) roll  =  180.0f;
+  if (roll  < -180.0f) roll  = -180.0f;
+  if (pitch >  180.0f) pitch =  180.0f;
+  if (pitch < -180.0f) pitch = -180.0f;
+  if (yaw   >  180.0f) yaw   =  180.0f;
+  if (yaw   < -180.0f) yaw   = -180.0f;
 }
 
 
