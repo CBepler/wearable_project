@@ -36,15 +36,23 @@ NUS_TX_CHAR    = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 # Must match NUM_FLEX in the firmware — increase as you install more sensors
 NUM_FLEX       = 5
 
-# Pin-to-finger binding — index = pin number (A0, A1, …).
+# Pin-to-finger binding — index = pin number (A0=pinky … A4=thumb).
 # Change this list to remap fingers; everything else derives from it.
 FINGER_ORDER   = ["pinky", "ring", "middle", "index", "thumb"]
 FINGER_NAMES   = [f.capitalize() for f in FINGER_ORDER]
 
-# Normalisation constants — map raw resistance (Ω) to 0.0–1.0
-# Adjust FLEX_R_FLAT and FLEX_R_BENT to match your sensors after calibration
-FLEX_R_FLAT    = 20_600    # ~47 kΩ when finger is straight
-FLEX_R_BENT    = 50_000 #125_000   # ~125 kΩ when finger is fully bent
+# Per-finger raw ADC calibration (12-bit, 0–4095).
+# flat_adc — reading when the finger is fully straight (unflexed)
+# bent_adc — reading when the finger is fully bent (flexed)
+# Values measured with flex_debug.ino; update after re-calibration.
+FLEX_CALIBRATION: dict[str, tuple[int, int]] = {
+    #           flat   bent
+    "pinky":  (  900,    0),
+    "ring":   ( 2200, 1400),
+    "middle": ( 2200, 1400),
+    "index":  ( 2100, 1400),
+    "thumb":  ( 1760,  960),
+}
 
 # ── Server ───────────────────────────────────────────────────
 SERVER_URL     = "http://localhost:8000/sensor"
@@ -58,10 +66,13 @@ _last_print    = 0.0
 _http_client: httpx.AsyncClient | None = None
 
 
-def _normalize_flex(resistance: float) -> float:
-    """Map raw flex resistance (Ω) to 0.0 (flat) – 1.0 (fully bent)."""
-    clamped = max(FLEX_R_FLAT, min(FLEX_R_BENT, resistance))
-    return (clamped - FLEX_R_FLAT) / (FLEX_R_BENT - FLEX_R_FLAT)
+def _normalize_flex(raw_adc: float, finger: str) -> float:
+    """Map a raw 12-bit ADC reading to 0.0 (flat) – 1.0 (fully bent)."""
+    flat, bent = FLEX_CALIBRATION[finger]
+    if flat == bent:
+        return 0.0
+    norm = (flat - raw_adc) / (flat - bent)
+    return max(0.0, min(1.0, norm))
 
 
 def parse_line(line: str) -> dict | None:
@@ -79,7 +90,7 @@ def parse_line(line: str) -> dict | None:
 
     # Parse and normalise however many flex sensors are active
     flex_raw  = [float(parts[4 + i]) for i in range(NUM_FLEX)]
-    flex_norm = [_normalize_flex(r) for r in flex_raw]
+    flex_norm = [_normalize_flex(flex_raw[i], FINGER_ORDER[i]) for i in range(NUM_FLEX)]
 
     packet = {
         "roll": roll, "pitch": pitch, "yaw": yaw,

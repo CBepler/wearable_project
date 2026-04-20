@@ -18,7 +18,7 @@
 //
 //    ROLL/PITCH/YAW  — degrees
 //    ACCEL_MAG       — total acceleration magnitude (m/s²)
-//    R0–R4           — flex resistance in Ohms, thumb → pinky
+//    R0–R4           — raw 12-bit ADC reading (0–4095), pinky → thumb
 //
 //  ── FLEX SENSOR WIRING ───────────────────────────────────────
 //    3.3V ──── [Flex Sensor] ──── signal ──── [47kΩ] ──── GND
@@ -57,11 +57,9 @@ float yaw   = 0.0f;
 // ── Flex sensors ─────────────────────────────────────────────
 // NUM_FLEX controls how many are read and transmitted.
 // Increase from 1 to 2, 3, 4, 5 as you install each sensor.
-const int   NUM_FLEX         = 5;
-const int   FLEX_PINS[5]     = { A0, A1, A2, A3, A4 };
-const float R_FIXED          = 25000.0f;  // 47kΩ fixed resistor
-const float V_SUPPLY         = 3.3f;
-const float ADC_MAX          = 4095.0f;   // 12-bit ADC
+// Pin order: A0=Pinky, A1=Ring, A2=Middle, A3=Index, A4=Thumb
+const int NUM_FLEX       = 5;
+const int FLEX_PINS[5]   = { A0, A1, A2, A3, A4 };
 
 // ── BLE Nordic UART Service ───────────────────────────────────
 BLEService uartService("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
@@ -116,13 +114,10 @@ void updateFilter(float gx, float gy, float gz,
 
 
 // ════════════════════════════════════════════════════════════
-//  Flex sensor resistance from ADC reading
+//  Raw ADC read for a flex sensor pin
 // ════════════════════════════════════════════════════════════
-float readFlexResistance(int pin) {
-  int raw    = analogRead(pin);
-  float vOut = raw * V_SUPPLY / ADC_MAX;
-  if (vOut < 0.001f) return 999999.0f;  // avoid divide-by-zero
-  return R_FIXED * (V_SUPPLY - vOut) / vOut;
+int readFlexRaw(int pin) {
+  return analogRead(pin);
 }
 
 
@@ -205,18 +200,18 @@ void loop() {
       float accelMag = sqrt(ax*ax + ay*ay + az*az);
 
       // Read however many flex sensors are currently installed
-      float r[5] = {0};
+      int r[5] = {0};
       for (int i = 0; i < NUM_FLEX; i++) {
-        r[i] = readFlexResistance(FLEX_PINS[i]);
+        r[i] = readFlexRaw(FLEX_PINS[i]);
       }
 
-      // Build packet: IMU fields first, then NUM_FLEX resistance values
+      // Build packet: IMU fields first, then NUM_FLEX raw ADC values
       char packet[128];
       int len = snprintf(packet, sizeof(packet),
                          "%.2f,%.2f,%.2f,%.2f",
                          roll, pitch, yaw, accelMag);
       for (int i = 0; i < NUM_FLEX; i++) {
-        len += snprintf(packet + len, sizeof(packet) - len, ",%.0f", r[i]);
+        len += snprintf(packet + len, sizeof(packet) - len, ",%d", r[i]);
       }
       snprintf(packet + len, sizeof(packet) - len, "\n");
 
