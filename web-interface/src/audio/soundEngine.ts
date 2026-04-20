@@ -236,10 +236,10 @@ export class SoundEngine {
         // Check all five fingers (all flex sensors installed)
         const installedFingers = new Set([0, 1, 2, 3, 4]);
         const activeFingers: boolean[] = [];
-        let activeNote = '—';
+        const activeNoteList: string[] = [];
 
-        // ROLL → Volume: ±60° covers full 0–100% range
-        const normVol = clamp(mapRange(data.roll, -60, 60, 0, 1) * cal.sensitivity * 2, 0, 1);
+        // ROLL → Volume: ±60° covers full 0–100% range (tilting down = louder)
+        const normVol = clamp(mapRange(data.roll, -60, 60, 1, 0) * cal.sensitivity * 2, 0, 1);
         const volDb = mapRange(normVol, 0, 1, -36, 12);
         inst.setVolume(volDb);
 
@@ -261,17 +261,17 @@ export class SoundEngine {
                 }
             }
 
-            if (isOn) activeNote = notes.join('+');
+            if (isOn) activeNoteList.push(...notes);
             this.fingerState[i] = isOn;
         }
 
         const activeCount = activeFingers.filter(Boolean).length;
-        const displayFreq = activeCount > 0 && activeNote !== '—'
-            ? Math.round(Tone.Frequency(activeNote.split('+')[0]).toFrequency())
+        const displayFreq = activeNoteList.length > 0
+            ? Math.round(Tone.Frequency(activeNoteList[0]).toFrequency())
             : 0;
 
         this._lastDisplay = {
-            note: activeCount > 0 ? activeNote : '—',
+            note: activeNoteList.length > 0 ? activeNoteList.join('+') : '—',
             frequency: displayFreq,
             volumePct: Math.round(normVol * 100),
             pan: 0,
