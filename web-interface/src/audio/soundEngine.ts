@@ -238,8 +238,8 @@ export class SoundEngine {
         const activeFingers: boolean[] = [];
         let activeNote = '—';
 
-        // ROLL → Volume (same mapping as analog mode)
-        const normVol = clamp(mapRange(data.roll, -180, 180, 0, 1) * cal.sensitivity * 2, 0, 1);
+        // ROLL → Volume: ±60° covers full 0–100% range
+        const normVol = clamp(mapRange(data.roll, -60, 60, 0, 1) * cal.sensitivity * 2, 0, 1);
         const volDb = mapRange(normVol, 0, 1, -36, 12);
         inst.setVolume(volDb);
 

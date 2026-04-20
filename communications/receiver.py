@@ -90,6 +90,11 @@ def parse_line(line: str) -> dict | None:
 
     # Parse and normalise however many flex sensors are active
     flex_raw  = [float(parts[4 + i]) for i in range(NUM_FLEX)]
+
+    # A raw value of 0–100 indicates a disconnected or faulty sensor — drop the packet
+    if any(0 <= v <= 100 for v in flex_raw):
+        return None
+
     flex_norm = [_normalize_flex(flex_raw[i], FINGER_ORDER[i]) for i in range(NUM_FLEX)]
 
     packet = {
