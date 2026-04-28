@@ -1,27 +1,13 @@
-# Hand Music — XIAO nRF52840 Sense
+#LYRA
 
 A gesture-based musical instrument that streams gyroscope, accelerometer, and flex sensor data over BLE to a laptop for sound synthesis.
 
----
-
-## Repository Structure
-
-```
-hand-music/
-├── xiao_gyro_ble/
-│   └── xiao_gyro_ble.ino   # Arduino firmware for the XIAO board
-├── receiver.py              # Python BLE receiver (run on laptop)
-├── requirements.txt         # Python dependencies
-└── README.md
-```
-
----
 
 ## Hardware
 
 - **Board:** Seeed Studio XIAO nRF52840 Sense
 - **Flex sensors:** 5× (one per finger)
-- **Resistors:** 5× 10kΩ (voltage divider for each flex sensor)
+- **Resistors:** 5× 47kΩ (voltage divider for each flex sensor)
 
 ### Flex Sensor Wiring
 
